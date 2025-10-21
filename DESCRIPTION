@@ -1,0 +1,37 @@
+Package: highSpaClone
+Title: Copy Number Variation Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics
+Version: 1.0.0
+Authors@R: 
+    person("Chenxuan", "Zang", 
+           email = "CZang@mdanderson.org", 
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-5237-0351"))
+Description: A computational framework for spatial copy number variation (CNV) inference 
+    and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+LinkingTo: 
+    Rcpp, 
+    RcppArmadillo
+Imports: 
+    Rcpp, 
+    RcppArmadillo,
+    Matrix,
+    dplyr,
+    magrittr,
+    ComplexHeatmap,
+    RANN, 
+    circlize,
+    cluster,
+    ggplot2,
+    stats,
+    utils,
+    methods,
+    parallel
+Depends: 
+    R (>= 4.3.0)
+LazyData: true
+URL: https://github.com/CZang409/highSpaClone
+BugReports: https://github.com/CZang409/highSpaClone/issues
