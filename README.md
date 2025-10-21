@@ -4,6 +4,10 @@
 
 <img width="4050" height="2700" alt="Figure 1" src="https://github.com/user-attachments/assets/c47664d9-af52-4cb0-bfe4-e686dbc44813" />
 
+## Dependencies
+- R 4.3+
+- Package dependencies: Rcpp, RcppArmadillo, Matrix, dplyr, magrittr, ComplexHeatmap, RANN, circlize, cluster, ggplot2, stats, utils, methods, parallel
+
 ## Installation
 The R package can be installed from github:
 ```R
