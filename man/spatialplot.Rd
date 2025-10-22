@@ -23,8 +23,15 @@ spatialplot(
 \item{use_coord_flip}{Logical; if \code{TRUE}, apply \code{ggplot2::coord_flip()}
 to swap axes after reversing x (default \code{FALSE}).}
 
+\item{use_x_reverse}{Logical; if \code{TRUE}, reverses the x-axis direction
+(i.e., flips the plot horizontally). This option is useful when the
+spatial coordinates are mirrored relative to the original histology image
+or when you want to align the orientation with external annotations.
+Default is \code{FALSE}.}
+
 \item{title}{Character plot title.}
 }
+
 \description{
 Draws a spatial scatter plot from \code{cnv_obj@cluster}, coloring points by
 clone label.
