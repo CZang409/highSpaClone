@@ -9,6 +9,7 @@ spatialplot(
   colors = c("#ebe5c2", "#D57358", "#8a508f", "#023047", "#E64B35", "#4DBBD5", "#00A087",
     "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"),
   point_size = 0.01,
+  use_x_reverse = FALSE,
   use_coord_flip = FALSE,
   title = ""
 )
@@ -35,11 +36,10 @@ Default is \code{FALSE}.}
 \description{
 Draws a spatial scatter plot from \code{cnv_obj@cluster}, coloring points by
 clone label.
-Optionally flips the axes with \code{coord_flip()}.
 }
 \examples{
 \dontrun{
-p <- spatialplot(cnv_obj, point_size = 0.01, use_coord_flip = T,
+p <- spatialplot(cnv_obj, point_size = 0.01, use_coord_flip = T, use_x_reverse = T,
                  title = "Tumor subclones")
 print(p)
 }
