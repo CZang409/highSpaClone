@@ -11,7 +11,7 @@ suggest_k(
   tumor,
   tumor.id = NULL,
   k_range = 2:8,
-  n_sub = 5000,
+  n_sub = 10000,
   alpha = 0.7,
   seed = 123,
   out_dir = "figs_k"
@@ -31,7 +31,7 @@ If both tumor label/IDs are absent, all non-reference cells are used.}
 
 \item{k_range}{Integer vector of K values to evaluate.}
 
-\item{n_sub}{Integer. Max number of cells to subsample for evaluation (default: 5000).}
+\item{n_sub}{Integer. Max number of cells to subsample for evaluation (default: 10000).}
 
 \item{alpha}{\code{NULL} for CNV-only. If a number in \code{[0,1]},
 fuse CNV and spatial distances: \eqn{d = alpha * d_{CNV} + (1-alpha) * d_{spatial}} (default: 0.7).}
