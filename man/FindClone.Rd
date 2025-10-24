@@ -45,7 +45,7 @@ all non-reference cells are used.}
 \value{
 The input \code{obj} with:
 \itemize{
-\item \verb{@cnv.data}: optimized CNV matrix (tumor cells × genes).
+\item \verb{@cnv.data}: optimized CNV matrix (tumor cells × bins).
 \item \verb{@cluster}: \code{data.frame(cell.id, x, y, cell.label)} where \code{cell.label} ∈ {\code{"Clone 1"}, …, \code{"Clone K"}}.
 }
 }
