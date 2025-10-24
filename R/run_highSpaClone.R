@@ -128,7 +128,7 @@ FindTumor <- function(
 
   for(iter in 1:max_iter){
 
-    if(iter %% 50 == 0 || iter == 1){
+    if(iter %% 25 == 0 || iter == 1){
       cat("Iteration ", iter, " / ", max_iter, "\n")
     }
 
