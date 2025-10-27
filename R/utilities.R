@@ -208,7 +208,7 @@ createObject <- function(counts,
 #' @importFrom parallel detectCores makeCluster clusterExport clusterEvalQ parLapply stopCluster mclapply
 #' @export
 #'
-smooth_expr_gpt <- function(
+smooth_expr <- function(
     obj,
     window_size = 101, 
     step = 50, 
