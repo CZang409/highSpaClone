@@ -55,7 +55,7 @@ FindTumor <- function(
   cat("========================================\n")
 
   # Extract smoothed data
-  cnv <- Matrix::t(obj@smoothed.data)
+  cnv <- t(obj@smoothed.data)
   cnv <- as.matrix(cnv)
   cnv <- cnv+1e-6
 
@@ -322,7 +322,7 @@ FindClone <- function(
   cat("\n[Step 1] Preparing data...\n")
 
   # 1) CNV matrix: transpose to (bins x cells) and add small epsilon to avoid zeros
-  cnv <- Matrix::t(obj@smoothed.data)
+  cnv <- t(obj@smoothed.data)
   cnv <- as.matrix(cnv)
   eps <- 1e-6
   cnv <- cnv + eps
