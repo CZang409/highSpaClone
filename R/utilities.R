@@ -208,238 +208,257 @@ createObject <- function(counts,
 #' @importFrom parallel detectCores makeCluster clusterExport clusterEvalQ parLapply stopCluster mclapply
 #' @export
 #'
-smooth_expr <- function(
+smooth_expr_gpt <- function(
     obj,
-    window_size = 101,
-    step = 50,
+    window_size = 101, 
+    step = 50, 
     exclude_chromosomes = c("chrX", "chrY", "chrM"),
     smooth_with_ends = FALSE,
-    use_chunk = TRUE,
+    use_chunk = TRUE,         
     chunk_size = 5000,
     parallel = FALSE,
     n_cores = NULL,
     max_cores = 4
 ){
-
+  
   start_time <- Sys.time()
-
+  
   if (!requireNamespace("Matrix", quietly = TRUE)) {
     stop("Package 'Matrix' is required.")
   }
-
+  
   ## ====== Extract expression matrix and normalize ======
   expr <- obj@counts.data
   expr <- normalize_data(expr)
-
+  
   step1_time <- Sys.time()
   cat("Normalization time: ", difftime(step1_time, start_time, units="secs"), " seconds\n")
-
-  ## Preserve sparsity
+  
+  # Check if sparse and keep it sparse
   is_sparse <- inherits(expr, "sparseMatrix")
   if (is_sparse) {
     expr <- as(expr, "CsparseMatrix")
     cat("Working with sparse matrix format (keeping sparse)\n")
   }
-
+  
   var <- obj@gene_order
   n_cells <- ncol(expr)
   cat("Total cells: ", n_cells, "\n")
-
-  ## ====== Decide whether to chunk by cells ======
+  
+  # Decide whether to use chunking
   if (use_chunk && n_cells > chunk_size) {
+    # ===== CHUNKING MODE =====
     cat("\n=== Chunking mode enabled ===\n")
     cat("Processing in chunks of size ", chunk_size, "...\n")
-
+    
+    # Split cells into chunks
     n_chunks <- ceiling(n_cells / chunk_size)
-    chunk_indices <- split(seq_len(n_cells), ceiling(seq_along(seq_len(n_cells)) / chunk_size))
+    chunk_indices <- split(1:n_cells, ceiling(seq_along(1:n_cells) / chunk_size))
+    
     cat("Total chunks: ", n_chunks, "\n")
-
-    ## ====== Parallel or sequential processing ======
+    
+    # Choose processing method based on parallel parameter
     if (parallel) {
       cat("=== Parallel processing enabled ===\n")
-
-      if (!requireNamespace("parallel", quietly = TRUE)) {
-        stop("Package 'parallel' is required for parallel processing.")
-      }
-
+      
+      # Check platform
       is_unix <- .Platform$OS.type == "unix"
-
+      
+      # Determine number of cores to use
       if (is.null(n_cores)) {
-        n_cores <- parallel::detectCores() - 1L
-        n_cores <- max(1L, n_cores)
+        n_cores <- parallel::detectCores() - 1
+        n_cores <- max(1, n_cores)
       }
+      
+      # Apply max_cores limit
       n_cores <- min(n_cores, max_cores, n_chunks)
+      
       cat("Requested cores: ", n_cores, " (max_cores limit: ", max_cores, ")\n")
-
-      expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
-      estimated_memory_gb <- expr_size_gb * n_cores * 1.5
-      cat("Estimated memory usage: ~", round(estimated_memory_gb, 2), " GB\n")
-      if (estimated_memory_gb > 50) {
-        warning("High memory usage estimated (", round(estimated_memory_gb, 2),
-                " GB). Consider reducing n_cores or max_cores, or using parallel=FALSE.")
-      }
-
+      
       if (is_unix) {
+        # Unix/Linux/Mac: use mclapply
         cat("Unix system detected: using mclapply\n")
         cat("Using ", n_cores, " cores\n")
-
-        chunk_results <- parallel::mclapply(seq_along(chunk_indices), function(i) {
-          tryCatch({
-            if (i %% 5 == 0) cat("Processing chunk", i, "of", n_chunks, "\n")
-            idx <- chunk_indices[[i]]
-            expr_chunk <- expr[, idx, drop = FALSE]
-            infercnv_chunk(expr_chunk, var, exclude_chromosomes,
-                           window_size, step, smooth_with_ends)
-          }, error = function(e) {
-            structure(list(error = conditionMessage(e)), class = "try-error")
-          })
+        
+        # Estimate memory
+        expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
+        estimated_memory_gb <- expr_size_gb * n_cores * 1.5
+        cat("Estimated memory usage: ~", round(estimated_memory_gb, 2), " GB\n")
+        
+        if (estimated_memory_gb > 50) {
+          warning("High memory usage estimated (", round(estimated_memory_gb, 2), 
+                  " GB). Consider reducing n_cores or max_cores, or using parallel=FALSE.")
+        }
+        
+        if (!requireNamespace("parallel", quietly = TRUE)) {
+          stop("Package 'parallel' is required for parallel processing.")
+        }
+        
+        library(parallel)
+        chunk_results <- mclapply(seq_along(chunk_indices), function(i) {
+          if (i %% 5 == 0) cat("Processing chunk", i, "of", n_chunks, "\n")
+          indices <- chunk_indices[[i]]
+          expr_chunk <- expr[, indices, drop = FALSE]
+          results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
+                                    window_size, step, smooth_with_ends)
+          return(results$x_smoothed)
         }, mc.cores = n_cores)
-
+        
       } else {
+        # Windows: use parLapply
         cat("Windows system detected: using parLapply\n")
         cat("Using ", n_cores, " cores\n")
-
+        
+        # Estimate memory
+        expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
+        estimated_memory_gb <- expr_size_gb * n_cores * 1.5
+        cat("Estimated memory usage: ~", round(estimated_memory_gb, 2), " GB\n")
+        
+        if (estimated_memory_gb > 50) {
+          warning("High memory usage estimated (", round(estimated_memory_gb, 2), 
+                  " GB). Consider reducing n_cores or max_cores, or using parallel=FALSE.")
+        }
+        
+        if (!requireNamespace("parallel", quietly = TRUE)) {
+          stop("Package 'parallel' is required for parallel processing.")
+        }
+        
+        # Create cluster
         cl <- parallel::makeCluster(n_cores)
-        on.exit(try(parallel::stopCluster(cl), silent = TRUE), add = TRUE)
-
-        parallel::clusterExport(
-          cl,
-          c("infercnv_chunk", "running_mean_by_chromosome",
-            "running_mean_for_chromosome", "running_mean",
-            "smooth_with_ends_internal", "sort_chromosomes",
-            "var", "exclude_chromosomes", "window_size",
-            "step", "smooth_with_ends"),
-          envir = environment()
-        )
-        parallel::clusterEvalQ(cl, { base::loadNamespace("Matrix"); NULL })
-        parallel::clusterEvalQ(cl, { base::loadNamespace("stats"); NULL })
-
-        chunk_results <- parallel::parLapply(cl, seq_along(chunk_indices), function(i) {
-          tryCatch({
+        
+        # Export necessary objects
+        parallel::clusterExport(cl, 
+                                c("infercnv_chunk", "running_mean_by_chromosome", 
+                                  "running_mean_for_chromosome", "running_mean",
+                                  "smooth_with_ends_internal", "sort_chromosomes",
+                                  "var", "exclude_chromosomes", "window_size", 
+                                  "step", "smooth_with_ends", "chunk_indices"),
+                                envir = environment())
+        
+        # Load required packages on each worker
+        parallel::clusterEvalQ(cl, {
+          library(dplyr)
+          library(Matrix)
+        })
+        
+        # Process chunks
+        chunk_results <- tryCatch({
+          parallel::parLapply(cl, seq_along(chunk_indices), function(i) {
             if (i %% 5 == 0) cat("Processing chunk", i, "of", length(chunk_indices), "\n")
-            idx <- chunk_indices[[i]]
-            expr_chunk <- expr[, idx, drop = FALSE]
-            infercnv_chunk(expr_chunk, var, exclude_chromosomes,
-                           window_size, step, smooth_with_ends)
-          }, error = function(e) {
-            structure(list(error = conditionMessage(e)), class = "try-error")
+            indices <- chunk_indices[[i]]
+            expr_chunk <- expr[, indices, drop = FALSE]
+            results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
+                                      window_size, step, smooth_with_ends)
+            return(results$x_smoothed)
           })
+        }, finally = {
+          parallel::stopCluster(cl)
         })
       }
-
+      
+      cat("Parallel processing completed.\n")
+      
     } else {
+      # Sequential processing with chunks
       cat("=== Sequential chunk processing ===\n")
       cat("Processing ", n_chunks, " chunks sequentially...\n")
-
+      
       chunk_results <- lapply(seq_along(chunk_indices), function(i) {
-        tryCatch({
-          if (i %% 5 == 0 || i == 1 || i == n_chunks) {
-            cat("Processing chunk", i, "of", n_chunks,
-                sprintf("(%.1f%% complete)\n", 100*i/n_chunks))
-          }
-          idx <- chunk_indices[[i]]
-          expr_chunk <- expr[, idx, drop = FALSE]
-          res <- infercnv_chunk(expr_chunk, var, exclude_chromosomes,
-                                window_size, step, smooth_with_ends)
-          rm(expr_chunk)
-          if (i %% 10 == 0) gc(verbose = FALSE)
-          res
-        }, error = function(e) {
-          structure(list(error = conditionMessage(e)), class = "try-error")
-        })
+        if (i %% 5 == 0 || i == 1 || i == n_chunks) {
+          cat("Processing chunk", i, "of", n_chunks, 
+              sprintf("(%.1f%% complete)\n", 100*i/n_chunks))
+        }
+        indices <- chunk_indices[[i]]
+        expr_chunk <- expr[, indices, drop = FALSE]
+        results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
+                                  window_size, step, smooth_with_ends)
+        
+        # Free memory
+        rm(expr_chunk)
+        if (i %% 10 == 0) gc(verbose = FALSE)
+        
+        return(results$x_smoothed)
       })
-
+      
       cat("Sequential chunk processing completed.\n")
     }
-
-    ## ====== Validate chunk results and extract ======
-    bad <- vapply(chunk_results, function(x) inherits(x, "try-error") || is.null(x$error) == FALSE, logical(1))
-    if (any(bad)) {
-      msgs <- vapply(chunk_results[bad], function(x) x$error, character(1))
-      stop("Some chunks failed: ", paste(sprintf("#%d: %s", which(bad), msgs), collapse = " | "))
-    }
-
-    x_list <- lapply(chunk_results, `[[`, "x_smoothed")
-    chr_pos_list <- lapply(chunk_results, `[[`, "chr_pos")
-
-    ## Column-name consistency assertion (all chunks must share the same set/order)
-    coln0 <- colnames(x_list[[1]])
-    same_cols <- vapply(x_list, function(m) identical(colnames(m), coln0), logical(1))
-    if (!all(same_cols)) {
-      stop("Column names (smoothed positions) differ across chunks. ",
-           "This indicates inconsistent per-chromosome outputs. Check running_mean/running_mean_by_chromosome.")
-    }
-
-    ## Combine (stack cells by rows)
+    
+    # Combine results - use sparse-friendly method if applicable
     cat("Combining results...\n")
-    if (inherits(x_list[[1]], "sparseMatrix")) {
+    
+    # Check if results are sparse
+    if (inherits(chunk_results[[1]], "sparseMatrix")) {
       cat("Combining sparse matrices...\n")
-      res <- do.call(Matrix::rBind, x_list)
+      # Use Matrix::rBind to keep sparse format
+      res <- do.call(Matrix::rBind, chunk_results)
     } else {
       cat("Combining dense matrices...\n")
-      res <- do.call(rbind, x_list)
+      res <- do.call(rbind, chunk_results)
     }
-
+    
     cat("Result class: ", class(res)[1], "\n")
     cat("Result dimensions: ", dim(res)[1], " x ", dim(res)[2], "\n")
-
-    ## Use chr_pos from the first chunk; optionally check consistency
-    chr_pos <- chr_pos_list[[1]]
-    same_chrpos <- vapply(chr_pos_list, function(cp) identical(cp, chr_pos), logical(1))
-    if (!all(same_chrpos)) {
-      warning("chr_pos differs across chunks; using the first chunk's chr_pos.")
-    }
-
-    ## Set row names to the actual concatenation order
-    cell_order <- unlist(chunk_indices, use.names = FALSE)
-    rownames(res) <- colnames(obj@counts.data)[cell_order]
-
+    
+    # Free memory
+    rm(chunk_results)
+    gc(verbose = FALSE)
+    
+    # Get chr_pos from first chunk
+    cat("Calculating chromosome positions...\n")
+    chr_pos_result <- infercnv_chunk(expr[, 1:min(100, n_cells), drop = FALSE], 
+                                     var, exclude_chromosomes, 
+                                     window_size, step, smooth_with_ends)
+    chr_pos <- chr_pos_result$chr_pos
+    
   } else {
-    ## ====== No chunking ======
+    # ===== NO CHUNKING MODE =====
     if (!use_chunk) {
       cat("\n=== No chunking mode (use_chunk=FALSE) ===\n")
     } else {
       cat("\n=== Cell count below chunk size ===\n")
     }
     cat("Processing all ", n_cells, " cells at once...\n")
-
+    
+    # Estimate memory for full processing
     expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
     cat("Expression matrix size: ~", round(expr_size_gb, 2), " GB\n")
+    
     if (expr_size_gb > 10) {
-      warning("Large matrix detected (", round(expr_size_gb, 2),
+      warning("Large matrix detected (", round(expr_size_gb, 2), 
               " GB). Consider using use_chunk=TRUE to reduce memory usage.")
     }
-
+    
+    # Process all cells at once
     cat("Running smoothing on all cells...\n")
-    results <- infercnv_chunk(expr, var, exclude_chromosomes,
+    results <- infercnv_chunk(expr, var, exclude_chromosomes, 
                               window_size, step, smooth_with_ends)
     chr_pos <- results$chr_pos
     res <- results$x_smoothed
-
+    
     cat("Result class: ", class(res)[1], "\n")
     cat("Result dimensions: ", dim(res)[1], " x ", dim(res)[2], "\n")
-
-    ## Row names follow the original order
-    rownames(res) <- colnames(obj@counts.data)
-
+    
     cat("No-chunk processing completed.\n")
   }
-
-  ## ====== Store into object ======
+  
+  # Store results - keep the original format
   cat("\nStoring results in object...\n")
+  
+ 
   obj@smoothed.data <- res
   obj@chr_pos <- chr_pos
-
+  
   cat("Results successfully stored.\n")
-
+  
   end_time <- Sys.time()
   total_time <- difftime(end_time, start_time, units="mins")
   cat("\n========================================\n")
   cat("Total running time: ", round(total_time, 2), " minutes\n")
   cat("========================================\n")
-
+  
   return(obj)
 }
+
 
 ## ====== Helper functions ======
 
@@ -479,81 +498,53 @@ normalize_data <- function(expr, size_factor = NULL) {
   normalized_data
 }
 
-running_mean_for_chromosome <- function(chr, expr, var, window_size, step, smooth_with_ends) {
-  idx <- which(var$chromosome == chr)
-  if (length(idx) == 0L) {
-    return(list(smoothed_x = matrix(numeric(0), nrow = ncol(expr), ncol = 0)))
-  }
-
-  ord <- order(var$start[idx], na.last = TRUE)
-  genes_chr <- rownames(var)[idx][ord]
-
-  keep <- genes_chr[genes_chr %in% rownames(expr)]
-  if (length(keep) == 0L) {
-    return(list(smoothed_x = matrix(numeric(0), nrow = ncol(expr), ncol = 0)))
-  }
-
-  expr_chr <- expr[keep, , drop = FALSE]  # genes x cells
-
-  running_mean_res <- running_mean(expr_chr, window_size, step, smooth_with_ends)
-  smoothed_x <- running_mean_res$smoothed_x   # cells x positions
-
-  if (!is.matrix(smoothed_x)) smoothed_x <- as.matrix(smoothed_x)
-  ## Explicit: rows = cells; row names = cell names
-  stopifnot(nrow(smoothed_x) == ncol(expr_chr))
-  if (is.null(rownames(smoothed_x))) rownames(smoothed_x) <- colnames(expr_chr)
-
-  list(smoothed_x = smoothed_x)
-}
-
 running_mean_by_chromosome <- function(expr, var, exclude_chromosomes, window_size, step, smooth_with_ends) {
+  
   if (!is.null(exclude_chromosomes)) {
-    var <- var[!(var$chromosome %in% exclude_chromosomes), , drop = FALSE]
+    var <- var[!(var$chromosome %in% exclude_chromosomes),]
   }
-
+  
   chromosomes <- unique(var$chromosome)
   chromosomes <- sort_chromosomes(chromosomes)
-
+  
+  
   running_means <- lapply(chromosomes, function(chr) {
     running_mean_for_chromosome(chr, expr, var, window_size, step, smooth_with_ends)
   })
+  
   names(running_means) <- chromosomes
-
   running_means_list <- lapply(running_means, `[[`, 1)
-  non_empty <- vapply(running_means_list, function(x) ncol(x) > 0, logical(1))
-  running_means_list <- running_means_list[non_empty]
-  chromosomes <- chromosomes[non_empty]
-  if (length(running_means_list) == 0) stop("No valid chromosome data after filtering")
-
-  ## Each chromosome must yield the same number of rows (cells)
-  rn_ok <- length(unique(vapply(running_means_list, nrow, integer(1)))) == 1
-  if (!rn_ok) stop("Inconsistent number of rows (cells) across chromosomes.")
-
-  x_smoothed <- do.call(cbind, running_means_list)
-
-  ## Fill row names (cells) if missing
-  if (is.null(rownames(x_smoothed)) || anyNA(rownames(x_smoothed))) {
-    rn <- rownames(running_means_list[[1]])
-    if (!is.null(rn)) rownames(x_smoothed) <- rn
-  }
-
-  ## Build chr_pos (offset of starting column for each chromosome)
+  
   chr_start_pos <- list()
-  chr_pos_offset <- 0L
+  chr_pos_offset <- 0
   for (i in seq_along(chromosomes)) {
     chr_start_pos[[chromosomes[i]]] <- chr_pos_offset
     chr_pos_offset <- chr_pos_offset + ncol(running_means_list[[i]])
   }
   names(chr_start_pos) <- chromosomes
-
-  ## Column names: chr_i_j
-  name_vectors <- unlist(lapply(seq_along(running_means_list), function(i){
-    n <- ncol(running_means_list[[i]])
-    paste(chromosomes[i], seq_len(n), sep = "_")
-  }), use.names = FALSE)
+  
+  x_smoothed <- do.call(cbind, running_means_list)
+  
+  name_vectors <- c()
+  for (list_name in names(running_means_list)) {
+    current_matrix <- running_means_list[[list_name]]
+    n <- ncol(current_matrix)
+    name_vector <- paste(list_name, 1:n, sep = "_")
+    name_vectors <- c(name_vectors,name_vector)
+  }
+  
   colnames(x_smoothed) <- name_vectors
+  
+  return(list(chr_pos = chr_start_pos, x_smoothed = x_smoothed))
+}
 
-  list(chr_pos = chr_start_pos, x_smoothed = x_smoothed)
+running_mean_for_chromosome <- function(chr, expr, var, window_size, step, smooth_with_ends) {
+  
+  genes <- var %>% filter(chromosome == chr) %>% arrange(start) %>% rownames()
+  expr_chr <- expr[which(rownames(expr) %in% genes),]
+  running_mean_res <- running_mean(expr_chr, window_size, step, smooth_with_ends)
+  
+  return(running_mean_res)
 }
 
 smooth_with_ends_internal <- function(x, pyramid) {
@@ -586,40 +577,40 @@ smooth_with_ends_internal <- function(x, pyramid) {
 }
 
 running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
-  ## x: genes x cells
-  x <- Matrix::t(x)  # -> cells x genes
-  n_cells <- nrow(x)
-  n_genes <- ncol(x)
-
+  
+  x <- t(x)
+  
   if (n < 2) {
-    smoothed_x <- Matrix::t(x)  # Return structure consistent with other branches
+    print("window length < 2, returning original unmodified data")
+    return(x)
+    
+  } else if (n < ncol(x)) {
+    
+    pyramid <- pmin(1:n, rev(1:n))
+    
+    smoothed_x <- if (smooth_with_ends) {
+      Matrix::t(apply(x, 1, function(row) {
+        smooth_with_ends_internal(row, pyramid)
+      }))
+    } else {
+      Matrix::t(apply(x, 1, function(row) {
+        stats::convolve(row, pyramid, type = "filter")
+      })) / sum(pyramid)
+    }
+    
+    smoothed_x <- smoothed_x[, seq(1, ncol(smoothed_x), by = step), drop = FALSE]
+    return(list(smoothed_x = smoothed_x))
+    
+  } else {
+    
+    pyramid <- rep(1, ncol(x))
+    smoothed_x <- apply(x, 1, function(row) {
+      stats::convolve(row, pyramid, type = "filter")
+    }) / sum(pyramid)
+    
+    smoothed_x <- as.matrix(smoothed_x)
     return(list(smoothed_x = smoothed_x))
   }
-
-  if (n < n_genes) {
-    pyramid <- pmin(seq_len(n), rev(seq_len(n)))
-    smoothed_x <- if (smooth_with_ends) {
-      t(apply(x, 1, function(row) smooth_with_ends_internal(row, pyramid)))
-    } else {
-      t(apply(x, 1, function(row) stats::convolve(row, pyramid, type = "filter"))) / sum(pyramid)
-    }
-    ## Downsample
-    smoothed_x <- smoothed_x[, seq(1, ncol(smoothed_x), by = step), drop = FALSE]
-  } else {
-    ## Explicit preallocation to ensure stable orientation/dimensions (cells x genes)
-    pyramid <- rep(1, n_genes)
-    out <- matrix(NA_real_, nrow = n_cells, ncol = n_genes)
-    for (i in seq_len(n_cells)) {
-      out[i, ] <- stats::convolve(x[i, ], pyramid, type = "filter") / sum(pyramid)
-    }
-    ## If you want downsampling consistent with the other branch, uncomment next line:
-    # out <- out[, seq(1, ncol(out), by = step), drop = FALSE]
-    smoothed_x <- out
-  }
-
-  ## Add row names (cell names)
-  if (!is.null(rownames(x))) rownames(smoothed_x) <- rownames(x)
-
-  list(smoothed_x = smoothed_x)
 }
+
 
