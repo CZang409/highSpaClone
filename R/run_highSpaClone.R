@@ -55,7 +55,7 @@ FindTumor <- function(
   cat("========================================\n")
 
   # Extract smoothed data
-  cnv <- t(obj@smoothed.data)
+  cnv <- Matrix::t(obj@smoothed.data)
   cnv <- as.matrix(cnv)
   cnv <- cnv+1e-6
 
