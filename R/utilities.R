@@ -541,7 +541,7 @@ running_mean_by_chromosome <- function(expr, var, exclude_chromosomes, window_si
 running_mean_for_chromosome <- function(chr, expr, var, window_size, step, smooth_with_ends) {
   
   genes <- var %>% filter(chromosome == chr) %>% arrange(start) %>% rownames()
-  expr_chr <- expr[which(rownames(expr) %in% genes),]
+  expr_chr <- expr[which(rownames(expr) %in% genes),,drop=FALSE]
   running_mean_res <- running_mean(expr_chr, window_size, step, smooth_with_ends)
   
   return(running_mean_res)
@@ -578,7 +578,17 @@ smooth_with_ends_internal <- function(x, pyramid) {
 
 running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
   
-  x <- t(x)
+  if (inherits(x, "sparseMatrix")) {
+    x <- Matrix::t(x)
+    if (is.vector(x) || (is.matrix(x) && length(dim(x)) != 2)) {
+      x <- as(x, "CsparseMatrix")
+    }
+  } else {
+    x <- t(x)
+    if (!is.matrix(x)) {
+      x <- as.matrix(x)
+    }
+  }
   
   if (n < 2) {
     print("window length < 2, returning original unmodified data")
@@ -593,9 +603,20 @@ running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
         smooth_with_ends_internal(row, pyramid)
       }))
     } else {
-      Matrix::t(apply(x, 1, function(row) {
-        stats::convolve(row, pyramid, type = "filter")
-      })) / sum(pyramid)
+
+      if (inherits(x, "sparseMatrix")) {
+        result <- Matrix::t(apply(x, 1, function(row) {
+          if (inherits(row, "sparseVector")) {
+            row <- as.numeric(row)
+          }
+          stats::convolve(row, pyramid, type = "filter")
+        })) / sum(pyramid)
+        result
+      } else {
+        Matrix::t(apply(x, 1, function(row) {
+          stats::convolve(row, pyramid, type = "filter")
+        })) / sum(pyramid)
+      }
     }
     
     smoothed_x <- smoothed_x[, seq(1, ncol(smoothed_x), by = step), drop = FALSE]
@@ -605,6 +626,9 @@ running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
     
     pyramid <- rep(1, ncol(x))
     smoothed_x <- apply(x, 1, function(row) {
+      if (inherits(row, "sparseVector")) {
+        row <- as.numeric(row)
+      }
       stats::convolve(row, pyramid, type = "filter")
     }) / sum(pyramid)
     
