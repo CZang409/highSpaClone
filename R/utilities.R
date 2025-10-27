@@ -229,6 +229,7 @@ smooth_expr <- function(
   
   ## ====== Extract expression matrix and normalize ======
   expr <- obj@counts.data
+  original_colnames <- colnames(expr)
   expr <- normalize_data(expr)
   
   step1_time <- Sys.time()
@@ -434,6 +435,7 @@ smooth_expr <- function(
                               window_size, step, smooth_with_ends)
     chr_pos <- results$chr_pos
     res <- results$x_smoothed
+    rownames(res) <- original_colnames
     
     cat("Result class: ", class(res)[1], "\n")
     cat("Result dimensions: ", dim(res)[1], " x ", dim(res)[2], "\n")
