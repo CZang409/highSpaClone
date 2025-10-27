@@ -396,6 +396,11 @@ smooth_expr <- function(
       cat("Combining dense matrices...\n")
       res <- do.call(rbind, chunk_results)
     }
+
+    chunk_rownames <- unlist(lapply(chunk_indices, function(idx) original_colnames[idx]),
+                         use.names = FALSE)
+    stopifnot(length(chunk_rownames) == nrow(res))
+    rownames(res) <- chunk_rownames
     
     cat("Result class: ", class(res)[1], "\n")
     cat("Result dimensions: ", dim(res)[1], " x ", dim(res)[2], "\n")
@@ -445,8 +450,7 @@ smooth_expr <- function(
   
   # Store results - keep the original format
   cat("\nStoring results in object...\n")
-  
- 
+
   obj@smoothed.data <- res
   obj@chr_pos <- chr_pos
   
