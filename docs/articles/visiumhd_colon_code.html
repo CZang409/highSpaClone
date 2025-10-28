@@ -233,21 +233,21 @@
 <span><span class="va">log.cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">cnv_obj</span><span class="op">@</span><span class="va">cnv.data</span><span class="op">)</span></span>
 <span><span class="va">log.cnv</span><span class="op">[</span><span class="va">log.cnv</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cnv</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
-<span><span class="va">visiumhd_colon_p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span><span class="va">visiumhd_colon_p5</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  cnv.data   <span class="op">=</span> <span class="va">log.cnv</span>,</span>
 <span>  annotation <span class="op">=</span> <span class="va">cnv_obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
 <span>  chr_pos    <span class="op">=</span> <span class="va">cnv_obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/cnv_heatmap.html">cnv_heatmap</a></span><span class="op">(</span></span>
-<span>  cnv.obj<span class="op">=</span><span class="va">visiumhd_colon_p1</span>,</span>
+<span>  cnv.obj<span class="op">=</span><span class="va">visiumhd_colon_p5</span>,</span>
 <span>  groupby <span class="op">=</span> <span class="st">"cell.label"</span>,</span>
 <span>  min_value  <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,  </span>
 <span>  max_value  <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  auto_size <span class="op">=</span> <span class="cn">F</span>,</span>
 <span>  show    <span class="op">=</span> <span class="cn">TRUE</span>,       </span>
 <span>  save    <span class="op">=</span> <span class="cn">TRUE</span>,         </span>
-<span>  outfile <span class="op">=</span> <span class="st">"visiumhd_colon_p1_heatmap.pdf"</span> </span>
+<span>  outfile <span class="op">=</span> <span class="st">"visiumhd_colon_p5_heatmap.pdf"</span> </span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
