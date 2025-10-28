@@ -6,7 +6,15 @@
 \alias{highSpaClone-package}
 \title{highSpaClone: Copy Number Variation Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics}
 \description{
-highSpaClone is a computational framework for spatial CNV inference and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data.
+A computational framework for spatial copy number variation (CNV) inference and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/CZang409/highSpaClone}
+  \item Report bugs at \url{https://github.com/CZang409/highSpaClone/issues}
+}
+
 }
 \author{
 \strong{Maintainer}: Chenxuan Zang \email{CZang@mdanderson.org} (\href{https://orcid.org/0000-0001-5237-0351}{ORCID})

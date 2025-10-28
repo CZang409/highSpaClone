@@ -35,7 +35,7 @@ FindTumor(
 \value{
 The input \code{obj} with updated fields:
 \itemize{
-\item \code{obj@cnv.data}: optimized CNV matrix (cells × genes).
+\item \code{obj@cnv.data}: optimized CNV matrix (cells × bins).
 \item \code{obj@cluster}: \code{data.frame(cell.id, x, y, cell.label)} with \code{cell.label} ∈ {\code{"Tumor"}, \code{"Other"}}.
 }
 }

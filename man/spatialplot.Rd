@@ -9,6 +9,7 @@ spatialplot(
   colors = c("#ebe5c2", "#D57358", "#8a508f", "#023047", "#E64B35", "#4DBBD5", "#00A087",
     "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"),
   point_size = 0.01,
+  use_x_reverse = FALSE,
   use_coord_flip = FALSE,
   title = ""
 )
@@ -20,8 +21,14 @@ spatialplot(
 
 \item{point_size}{Numeric point size passed to \code{geom_point()}.}
 
-\item{use_coord_flip}{Logical; if \code{TRUE}, apply \code{ggplot2::coord_flip()}
-to swap axes after reversing x (default \code{FALSE}).}
+\item{use_x_reverse}{Logical; if \code{TRUE}, reverses the x-axis direction
+(i.e., flips the plot horizontally). This option is useful when the
+spatial coordinates are mirrored relative to the original histology image
+or when you want to align the orientation with external annotations.
+Default is \code{FALSE}.}
+
+\item{use_coord_flip}{Logical; if \code{TRUE}, flips the coordinate axes (useful when the
+image orientation requires rotation). Default is \code{FALSE}.}
 
 \item{title}{Character plot title.}
 }
@@ -32,7 +39,10 @@ Optionally flips the axes with \code{coord_flip()}.
 }
 \examples{
 \dontrun{
-p <- spatialplot(cnv_obj, point_size = 0.01, use_coord_flip = T,
+p <- spatialplot(cnv_obj,
+                 point_size = 0.01,
+                 use_x_reverse = T,
+                 use_coord_flip = T,
                  title = "Tumor subclones")
 print(p)
 }

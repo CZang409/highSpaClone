@@ -12,7 +12,7 @@
 #' @return
 #' The input `obj` with updated fields:
 #' \itemize{
-#'   \item `obj@cnv.data`: optimized CNV matrix (cells × genes).
+#'   \item `obj@cnv.data`: optimized CNV matrix (cells × bins).
 #'   \item `obj@cluster`: `data.frame(cell.id, x, y, cell.label)` with `cell.label` ∈ {`"Tumor"`, `"Other"`}.
 #' }
 #'
@@ -276,7 +276,7 @@ FindTumor <- function(
 #' @return
 #' The input `obj` with:
 #' \itemize{
-#'   \item `@cnv.data`: optimized CNV matrix (tumor cells × genes).
+#'   \item `@cnv.data`: optimized CNV matrix (tumor cells × bins).
 #'   \item `@cluster`: `data.frame(cell.id, x, y, cell.label)` where `cell.label` ∈ {`"Clone 1"`, …, `"Clone K"`}.
 #' }
 #'
@@ -321,13 +321,13 @@ FindClone <- function(
   # ===== Step 1: Data preparation =====
   cat("\n[Step 1] Preparing data...\n")
 
-  # 1) CNV matrix: transpose to (genes x cells) and add small epsilon to avoid zeros
+  # 1) CNV matrix: transpose to (bins x cells) and add small epsilon to avoid zeros
   cnv <- Matrix::t(obj@smoothed.data)
   cnv <- as.matrix(cnv)
   eps <- 1e-6
   cnv <- cnv + eps
   all_cells <- colnames(cnv)
-  cat("CNV matrix dimensions (genes x cells): ", nrow(cnv), " x ", ncol(cnv), "\n")
+  cat("CNV matrix dimensions (bins x cells): ", nrow(cnv), " x ", ncol(cnv), "\n")
 
   # 2) Annotation must contain cell.id and cell.label
   label <- obj@annotation
@@ -393,14 +393,14 @@ FindClone <- function(
   # ===== Step 2: Initialize matrices =====
   cat("\n[Step 2] Initializing matrices...\n")
 
-  # Construct diagonal B with reference means (genes x genes)
+  # Construct diagonal B with reference means (bins x bins)
   B <- diag(x = row_means)
   colnames(B) <- rownames(cnv)  # gene names
   rownames(B) <- rownames(cnv)
 
-  # Compute V = CNV / ref_mean (cells x genes)
+  # Compute V = CNV / ref_mean (cells x bins)
   V <- sweep(cnv, 1, row_means, "/")
-  V <- t(V)  # -> cells x genes (tumor subset)
+  V <- t(V)  # -> cells x bins (tumor subset)
 
   # Spatial adjacency
   AMatrix <- createA(spatial_location)
@@ -418,7 +418,7 @@ FindClone <- function(
   if (!requireNamespace("Matrix", quietly = TRUE)) {
     stop("Package 'Matrix' is required.")
   }
-  countMatrix <- Matrix::Matrix(cnv, sparse = TRUE)     # genes x tumor_cells
+  countMatrix <- Matrix::Matrix(cnv, sparse = TRUE)     # bins x tumor_cells
   AMatrix     <- Matrix::Matrix(AMatrix, sparse = TRUE)
 
   # Initial IRIS iteration
@@ -508,7 +508,7 @@ FindClone <- function(
   # ===== Step 4: Store results in object =====
   cat("\n[Step 4] Storing results...\n")
 
-  # Write back CNV (cells x genes; tumor cells only)
+  # Write back CNV (cells x bins; tumor cells only)
   rownames(ResList$V) <- colnames(countMatrix)  # tumor cell IDs
   colnames(ResList$V) <- Bins
   obj@cnv.data <- ResList$V
@@ -622,12 +622,12 @@ suggest_k <- function(
   }
 
   ## ---------- 2) Reference mean from FULL CNV (not tumor-only) ----------
-  ref_mat  <- cnv_full[, ref_ids, drop = FALSE]    # genes x ref
-  row_means <- rowMeans(ref_mat)                   # length = genes
+  ref_mat  <- cnv_full[, ref_ids, drop = FALSE]    # bins x ref
+  row_means <- rowMeans(ref_mat)                   # length = bins
 
-  ## ---------- 3) Restrict to tumor cells, then compute V (cells x genes) ----------
-  cnv_tumor <- cnv_full[, tumor_ids, drop = FALSE] # genes x tumor
-  V <- t(sweep(cnv_tumor, 1, row_means, "/"))      # cells x genes
+  ## ---------- 3) Restrict to tumor cells, then compute V (cells x bins) ----------
+  cnv_tumor <- cnv_full[, tumor_ids, drop = FALSE] # bins x tumor
+  V <- t(sweep(cnv_tumor, 1, row_means, "/"))      # cells x bins
 
   ## ---------- 4) (Optional) Align location if alpha is provided ----------
   loc_use <- NULL

@@ -1,0 +1,191 @@
+---
+title: "Xenium Breast Cancer Dataset 1"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Xenium Breast Cancer Dataset 1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  eval = FALSE,
+  comment = "#>"
+)
+```
+
+### Python code
+
+```{r}
+# apply Tangram to impute genes
+import os, sys
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scanpy as sc
+import torch
+import tangram as tg
+
+tg.__version__
+
+# spatial transcriptomics data
+ad_sp = sc.read_10x_h5(
+    filename="cell_feature_matrix.h5"
+)
+
+df = pd.read_csv(
+    "cells.csv"
+)
+
+df.set_index(ad_sp.obs_names, inplace=True)
+ad_sp.obs = df.copy()
+
+ad_sp.obsm["spatial"] = ad_sp.obs[["x_centroid", "y_centroid"]].copy().to_numpy()
+print(ad_sp)
+
+# single cell rna sequencing reference
+ad_sc = sc.read_h5ad('./xenium_breast1_sc.h5ad')
+sc.pp.normalize_total(ad_sc)
+
+gene_names = ad_sp.var_names
+markers = gene_names.tolist()
+print(len(markers))
+
+tg.pp_adatas(ad_sc, ad_sp, genes=markers)
+assert ad_sc.uns['training_genes'] == ad_sp.uns['training_genes']
+
+ad_map = tg.map_cells_to_space(
+    adata_sc=ad_sc,
+    adata_sp=ad_sp,
+    device='cpu')
+
+tg.project_cell_annotations(ad_map, ad_sp, annotation='cell_label')
+annotation_list = list(pd.unique(ad_sc.obs['cell_label']))
+
+ad_map.uns['train_genes_df']
+ad_ge = tg.project_genes(adata_map=ad_map, adata_sc=ad_sc)
+print(ad_ge)
+coords = [[x,y] for x,y in zip(ad_sp.obs['x_centroid'].values*(-1),ad_sp.obs['y_centroid'].values*(-1))]
+ad_sp.obsm['spatial'] = np.array(coords)
+ad_ge.write('xenium_breast1_tangram.h5ad')
+
+# training score
+tg.plot_training_scores(ad_map, bins=20, alpha=.5)
+plt.savefig("train_score.png",dpi=300)
+
+# cell type mapping
+tg.plot_cell_annotation_sc(ad_sp, annotation_list,spot_size= 50, scale_factor=0.1, perc=0.001)
+plt.savefig("cell_annotation.png",dpi=300)
+
+####################################################################
+## scale gene expression to scRNA range
+ad_ge.var_names=[i.upper() for i in list(ad_ge.var_names)]
+ad_sc = ad.read_h5ad('./xenium_breast1_sc.h5ad')
+ad_sc.var_names=[i.upper() for i in list(ad_sc.var_names)]
+ad_sc.var_names.is_unique
+duplicates = ad_sc.var_names[ad_sc.var_names.duplicated()]
+print("Duplicate var_names:", duplicates)
+ad_sc = ad_sc[:, ~ad_sc.var_names.duplicated()].copy()
+
+genes_adata1 = ad_ge.var_names
+genes_adata2 = ad_sc.var_names
+
+common_genes = genes_adata1.intersection(genes_adata2)
+ad_sp_filtered = ad_ge[:, common_genes].copy()
+ad_sc_filtered = ad_sc[:,common_genes].copy()
+
+X1 = ad_sp_filtered.X
+X2 = ad_sc_filtered.X
+
+import scipy.sparse
+if scipy.sparse.issparse(X1):
+    X1 = X1.toarray()
+
+if scipy.sparse.issparse(X2):
+    X2 = X2.toarray()
+
+min_vals_1 = np.min(X1, axis=0)
+max_vals_1 = np.max(X1, axis=0)
+min_vals_2 = np.min(X2, axis=0)
+max_vals_2 = np.max(X2, axis=0)
+
+scaled_X = (X1 - min_vals_1) / (max_vals_1 - min_vals_1)
+scaled_X = scaled_X * (max_vals_2 - min_vals_2) + min_vals_2
+
+ad_sp_filtered.X = scaled_X
+ad_sp_filtered.write_h5ad('xenium_breast1_sc_scale.h5ad')
+
+```
+
+### R code
+
+```{r}
+# apply highSpaClone to infer spatial CNV and detect tumor subclones
+library(highSpaClone)
+library(anndata)
+library(ggplot2)
+library(dplyr)
+
+# load data
+data=read_h5ad("./xenium_breast1_sc_scale.h5ad")
+counts=t(data$X)
+colnames(counts)=data$obs$cell_id
+
+location=data.frame(id=factor(data$obs$cell_id),
+                    x=data$obs$x_centroid,
+                    y=data$obs$y_centroid)
+rm(data)
+gc()
+rownames(location)=location$id
+location <- location[match(colnames(counts),rownames(location)),]
+
+annotation <- read.csv('./xenium_breast1_label.csv')
+annotaton <- annotation[match(colnames(counts),annotation$cell.id),]
+xenium_breast1_obj <- list(counts=counts, location=location, annotation=annotation)
+saveRDS(xenium_breast1_obj, file='xenium_breast1_obj.rds')
+
+data <- readRDS('xenium_breast1_obj.rds')
+
+# create highSpaClone object
+obj <- createObject(counts=data$counts,
+                    location=data$location,
+                    annotations_file = data$annotation)
+
+# smooth gene expression by chromosome
+smooth_obj <- smooth_expr(obj = obj, parallel = T, use_chunk = T)
+
+# CNV inference and subclone detection
+cnv_obj <- FindClone(smooth_obj,
+                      ref=c("Macrophages_1", "Macrophages_2", "B_Cells", "CD8+_T_Cells", "CD4+_T_Cells"),
+                      tumor=c("Invasive_Tumor", "Prolif_Invasive_Tumor", "DCIS_1", "DCIS_2"),
+                      K=3,
+                      lambda=1000)
+
+# subclone spatial visualization
+colors <- c("#D57358", "#8a508f", "#023047")
+spatialplot(cnv_obj, use_x_reverse=T, colors=colors, point_size = 0.01)
+
+# CNV heatmap
+log.cnv <- log2(cnv_obj@cnv.data)
+log.cnv[log.cnv > -0.3 & log.cnv < 0.3] <- 0
+
+xenium_breast1 <- list(
+  cnv.data   = log.cnv,
+  annotation = cnv_obj@cluster,
+  chr_pos    = cnv_obj@chr_pos
+)
+
+cnv_heatmap(
+  cnv.obj=xenium_breast1,
+  groupby = "cell.label",
+  auto_size = F,
+  width_in = 7,
+  height_in = 5,
+  show    = TRUE,       
+  save    = TRUE,         
+  outfile = "xenium_breast1_heatmap.pdf" 
+)
+
+```

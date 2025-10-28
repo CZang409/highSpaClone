@@ -1,0 +1,200 @@
+---
+title: "Intro: VisumHD Breast Cancer Dataset"
+author: "Chenxuan Zang: VisumHD Breast Cancer Dataset"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Intro: VisumHD Breast Cancer Dataset}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = TRUE,
+  dpi=300
+)
+```
+
+```{r setup}
+library(highSpaClone)
+library(ggplot2)
+library(dplyr)
+```
+
+## Loading required input data
+
+
+highSpaClone requires three types of input data:
+
+- Spatial transcriptomics count data (row: gene, column: cell).   
+- Spatial location information: spatial coordinates for each cell, with three columns (cell.id, x, y). The row names of location must match with the column names of counts.).  
+- Cell annotation information: cell type annotation information, should contain two columns, (cell.id, cell.label). Can be a data.frame, .csv or .txt file. 
+
+
+```{r}
+data <- readRDS('C:/Users/CZang/OneDrive - Inside MD Anderson/chenxuan/project/highSpaClone/data/test.rds')
+
+counts <- data$counts
+location <- data$spatial_location
+annotation <- data$annotation
+```
+
+
+## Create highSpaClone object
+
+This step is to create a highSpaClone object. The most important input arguments are:
+
+- `counts`: Gene-by-cell raw count matrix. Ensure to contain the row/column names.
+- `location`: A data.frame or matrix of spatial coordinates for each cell with three columns representing the cell id, x and y coordinates of the spatial location (The column names must contain “cell.id”, "x" and “y”).
+- `annotations_file`: Cell type annotation file with two columns representing the cell id and cell type/cluster of each cell. Must be a data.frame, .csv or .txt file.
+- `gene_order_file`: The gene order file, contains chromosome, start, and stop position for each gene. If not provided, the function uses the built-in hg38 annotation. Users may upload/provide a custom file to replace the default.
+- `min_avg_expression`: Minimum average expression per gene (default: 0.01).
+- `min_gene_counts`: Minimum total counts per cell (default: 100).
+- `project`: Project name.
+
+```{r}
+obj <- createObject(counts=counts,
+                    location=location,
+                    annotations_file = annotation,
+                    gene_order_file=NULL,
+                    min_avg_expression=0.01,
+                    min_gene_counts=100,
+                    project='visumhd.breast')
+```
+
+
+## Main function
+
+### Smooth by chromosome
+
+This step is to smooth gene expression by gene order within each chromosome, which improves CNV signal continuity and suppresses gene-specific noise. The most important input arguments are:
+
+- `obj`: highSpaClone object.
+- `window_size`: Size of the running-mean window (in genes) used within each chromosome (default: 101). Must be an integer.
+- `step`: Number of genes in a bin (default: 50). Must be an integer. 
+- `use_chunk`: Whether to split cells into smaller subsets (chunks) during computation (default: TRUE).
+- `chunk_size`: The number of cells per chunk when chunking is enabled (default: 5000).
+- `parallel`: If `TRUE`, chunks are processed in parallel to accelerate runtime (default: FALSE).
+
+```{r}
+# smooth gene expression by chromosome
+smooth_obj <- smooth_expr(obj = obj, 
+                          window_size = 101,
+                          step = 50,
+                          use_chunk = T, 
+                          chunk_size = 100,
+                          parallel = T 
+)
+```
+
+### Identify tumor cells (optional)
+
+The `FindTumor()` function identifies tumor cells based on CNV profiles when no prior tumor annotations are available.
+This function performs reference-guided tumor segmentation using the smoothed highSpaClone object.
+
+It requires users to specify the normal (reference) cell population, which can be provided in either of the following forms:
+
+- `ref`: A character vector of reference cell type labels.
+- `ref.id`: A character vector of reference cell IDs.
+
+Only one of these arguments needs to be provided.
+
+```{r}
+# Tumor segmentation
+obj <- FindTumor(smooth_obj,
+                 ref=c("B Cells", "CD4+ T Cells", "CD8+ T Cells", 
+                 "Macrophages 1", "Macrophages 2", "Endothelial"))
+
+# Visualization
+colors <- c("#ebe5c2", "#D57358")
+spatialplot(obj, colors=colors, point_size = 3, use_coord_flip=T)
+```
+
+### Suggest the number of subclones (optional)
+
+The number of tumor subclones must be pre-specified. If there is no prior knowledge, we provide the function `suggest_k`, which recommends an appropriate value for K based on a Silhouette score that integrates both CNV and spatial information. The most important input arguments are:
+
+- `obj`: smoothed highSpaClone object.
+- `ref`: A character vector of reference cell type labels.
+- `tumor`: A character vector of tumor cell type labels.
+- `k_range`: Integer vector of K values to evaluate.
+- `n_sub`: Max number of cells to subsample for evaluation (default: 5000).
+- `alpha`: A number bewtween 0 and 1. Control the weight of CNV in clustering. 
+
+```{r}
+# Suggest the number of subclones
+suggest_k(
+    obj=smooth_obj,
+    ref=c("B Cells", "CD4+ T Cells", "CD8+ T Cells", 
+          "Macrophages 1", "Macrophages 2", "Endothelial"),
+    tumor="Invasive Tumor",
+    k_range = 2:8,
+    n_sub = 500,
+    alpha = 0.7,
+    seed = 123,
+    out_dir = "figs_k"
+)
+
+```
+
+### Spatial CNV inference and subclone detection
+
+The `FindClone()` function performs spatial CNV inference and tumor subclone identification based on CNV patterns, enhanced by spatial regularization. After tumor cells are identified, this function clusters them into subclonal populations that share similar CNV states while also preserving spatial continuity.
+
+Users must define a reference (normal) cell population using either:
+
+- `ref`: A character vector of reference (normal) cell type labels, or
+- `ref.id`: A character vector of reference cell IDs.
+
+All non-reference cells are treated as tumor cells by default. Alternatively, users may explicitly specify the tumor population via:
+
+- `tumor`: A character vector of tumor cell type labels, or
+- `tumor.id`: A character vector of tumor cell IDs.
+
+The parameter `lambda` controls the strength of spatial smoothing, encouraging neighboring cells to remain in the same subclone if supported by CNV evidence. The number of subclones to infer is set by `K`, allowing flexible modeling of tumor heterogeneity.
+
+
+```{r}
+# Spatial CNV inference and tumor subclone detection
+obj <- FindClone(obj=smooth_obj,
+                 ref=c("B Cells", "CD4+ T Cells", "CD8+ T Cells", 
+                      "Macrophages 1", "Macrophages 2", "Endothelial"),
+                 tumor="Invasive Tumor",
+                 K=3,
+                 lambda=1)
+
+# Visualization
+colors <- c("#E64B35", "#4DBBD5", "#8491B4")
+spatialplot(obj, colors=colors, point_size = 3, use_coord_flip=T)
+```
+
+### Visualize CNV heatmap
+
+Visualize subclonal CNV patterns by heatmap:
+
+```{r}
+# Visualize CNV heatmap
+log.cnv <- log2(obj@cnv.data)
+log.cnv[log.cnv > -0.5 & log.cnv < 0.5] <- 0
+
+breasthd <- list(
+  cnv.data   = log.cnv,
+  annotation = obj@cluster,
+  chr_pos    = obj@chr_pos
+)
+
+cnv_heatmap(
+  cnv.obj=breasthd,
+  groupby = "cell.label",
+  min_value  = -3,  
+  max_value  = 3,
+  show    = TRUE,       
+  save    = TRUE,         
+  outfile = "breasthd_heatmap.png" 
+)
+```
+
+
+

@@ -1,0 +1,198 @@
+---
+title: "VisiumHD Colorectal Cancer Datasets"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{VisiumHD Colorectal Cancer Datasets}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  eval = FALSE,
+  comment = "#>"
+)
+```
+
+### P1
+
+```{r}
+# apply highSpaClone to infer spatial CNV and detect tumor subclones
+library(highSpaClone)
+library(ggplot2)
+library(dplyr)
+
+# load data
+data <- readRDS('./visiumhd_colon_p1_data.rds')
+
+# create highSpaClone object
+obj <- createObject(counts=data$counts,
+                    location=data$location,
+                    annotations_file = data$annotation,
+                    min_avg_expression=0,
+                    min_gene_counts=0)
+
+# smooth gene expression by chromosome
+smooth_obj <- smooth_expr(obj = obj, parallel = T, use_chunk = T)
+
+# tumor identification
+tumor_obj <- FindClone(smooth_obj,
+                      ref=c("B cells","T cells", "Smooth Muscle", "Endothelial"),
+                      K=2,
+                      lambda=0.001)
+
+# tumor spatial visualization
+colors <- c("#ebe5c2", "#D57358")
+spatialplot(tumor_obj, colors=colors, point_size = 0.01, use_coord_flip=T, use_x_reverse=T)
+
+tumor.df <- tumor_obj@cluster
+tumor.id <- tumor.df %>% filter(cell.label=='Tumor') %>% select(cell.id)
+subclone_obj <- FindClone(smooth_obj,
+                          ref=c("B cells","T cells", "Smooth Muscle", "Endothelial"),
+                          tumor.id=tumor.id$cell.id,
+                          K=2,
+                          lambda=1)
+
+colors <- c("#D57358","#8a508f")
+spatialplot(subclone_obj,  colors=colors, point_size = 0.01, use_coord_flip=T, use_x_reverse=T)
+
+# CNV heatmap
+log.cnv <- log2(cnv_obj@cnv.data)
+log.cnv[log.cnv > -0.5 & log.cnv < 0.5] <- 0
+
+visiumhd_colon_p1 <- list(
+  cnv.data   = log.cnv,
+  annotation = cnv_obj@cluster,
+  chr_pos    = cnv_obj@chr_pos
+)
+
+cnv_heatmap(
+  cnv.obj=visiumhd_colon_p1,
+  groupby = "cell.label",
+  min_value  = -3,  
+  max_value  = 3,
+  auto_size = F,
+  show    = TRUE,       
+  save    = TRUE,         
+  outfile = "visiumhd_colon_p1_heatmap.pdf" 
+)
+```
+
+### P2
+
+```{r}
+# load data
+data <- readRDS('./visiumhd_colon_p2_data.rds')
+
+# create highSpaClone object
+obj <- createObject(counts=data$counts,
+                    location=data$location,
+                    annotations_file = data$annotation,
+                    min_avg_expression=0,
+                    min_gene_counts=0)
+
+# smooth gene expression by chromosome
+smooth_obj <- smooth_expr(obj = obj, parallel = T, use_chunk = T)
+
+# tumor identification
+tumor_obj <- FindClone(smooth_obj,
+                      ref=c("B cells","T cells", "Smooth Muscle", "Endothelial"),
+                      K=2,
+                      lambda=0.001)
+
+# tumor spatial visualization
+colors <- c("#ebe5c2", "#D57358")
+spatialplot(tumor_obj, colors=colors, point_size = 0.01, use_coord_flip=T, use_x_reverse=T)
+
+tumor.df <- tumor_obj@cluster
+tumor.id <- tumor.df %>% filter(cell.label=='Tumor') %>% select(cell.id)
+subclone_obj <- FindClone(smooth_obj,
+                          ref=c("B cells","T cells", "Smooth Muscle", "Endothelial"),
+                          tumor.id=tumor.id$cell.id,
+                          K=2,
+                          lambda=1)
+
+colors <- c("#D57358","#8a508f")
+spatialplot(subclone_obj,  colors=colors, point_size = 0.01, use_coord_flip=T, use_x_reverse=T)
+
+# CNV heatmap
+log.cnv <- log2(cnv_obj@cnv.data)
+log.cnv[log.cnv > -0.5 & log.cnv < 0.5] <- 0
+
+visiumhd_colon_p2 <- list(
+  cnv.data   = log.cnv,
+  annotation = cnv_obj@cluster,
+  chr_pos    = cnv_obj@chr_pos
+)
+
+cnv_heatmap(
+  cnv.obj=visiumhd_colon_p2,
+  groupby = "cell.label",
+  min_value  = -3,  
+  max_value  = 3,
+  auto_size = F,
+  show    = TRUE,       
+  save    = TRUE,         
+  outfile = "visiumhd_colon_p2_heatmap.pdf" 
+)
+```
+
+### P5
+
+```{r}
+# load data
+data <- readRDS('./visiumhd_colon_p5_data.rds')
+
+# create highSpaClone object
+obj <- createObject(counts=data$counts,
+                    location=data$location,
+                    annotations_file = data$annotation,
+                    min_avg_expression=0,
+                    min_gene_counts=0)
+
+# smooth gene expression by chromosome
+smooth_obj <- smooth_expr(obj = obj, parallel = T, use_chunk = T)
+
+# tumor identification
+tumor_obj <- FindClone(smooth_obj,
+                      ref=c("B cells","T cells", "Smooth Muscle", "Endothelial"),
+                      K=2,
+                      lambda=0.001)
+
+# tumor spatial visualization
+colors <- c("#ebe5c2", "#D57358")
+spatialplot(tumor_obj, colors=colors, point_size = 0.01, use_coord_flip=T, use_x_reverse=T)
+
+tumor.df <- tumor_obj@cluster
+tumor.id <- tumor.df %>% filter(cell.label=='Tumor') %>% select(cell.id)
+subclone_obj <- FindClone(smooth_obj,
+                          ref=c("B cells","T cells", "Smooth Muscle", "Endothelial"),
+                          tumor.id=tumor.id$cell.id,
+                          K=2,
+                          lambda=1)
+
+colors <- c("#D57358","#8a508f")
+spatialplot(subclone_obj,  colors=colors, point_size = 0.01, use_coord_flip=T, use_x_reverse=T)
+
+# CNV heatmap
+log.cnv <- log2(cnv_obj@cnv.data)
+log.cnv[log.cnv > -0.5 & log.cnv < 0.5] <- 0
+
+visiumhd_colon_p1 <- list(
+  cnv.data   = log.cnv,
+  annotation = cnv_obj@cluster,
+  chr_pos    = cnv_obj@chr_pos
+)
+
+cnv_heatmap(
+  cnv.obj=visiumhd_colon_p1,
+  groupby = "cell.label",
+  min_value  = -3,  
+  max_value  = 3,
+  auto_size = F,
+  show    = TRUE,       
+  save    = TRUE,         
+  outfile = "visiumhd_colon_p1_heatmap.pdf" 
+)
+```

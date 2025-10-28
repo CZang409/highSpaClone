@@ -1,21 +1,41 @@
 Package: highSpaClone
 Title: Copy Number Variation Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics
-Version: 1.0
-Authors@R: c(
-    person("Chenxuan", "Zang", email = "CZang@mdanderson.org", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0001-5237-0351")))
-Description: highSpaClone is a computational framework for spatial CNV inference and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data. 
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Version: 1.0.0
+Authors@R: 
+    person("Chenxuan", "Zang", 
+           email = "CZang@mdanderson.org", 
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-5237-0351"))
+Description: A computational framework for spatial copy number variation (CNV) inference 
+    and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data.
+License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 LinkingTo: 
-    Rcpp, RcppArmadillo
+    Rcpp, 
+    RcppArmadillo
 Imports: 
-    Rcpp, RcppArmadillo
+    Rcpp, 
+    RcppArmadillo,
+    Matrix,
+    dplyr,
+    magrittr,
+    ComplexHeatmap,
+    RANN, 
+    circlize,
+    cluster,
+    ggplot2,
+    stats,
+    utils,
+    methods,
+    parallel
 Depends: 
-    R (>= 2.10)
+    R (>= 4.3.0)
 LazyData: true
-URL: https://github.com/CZang409/highSpaClone
+URL: https://github.com/CZang409/highSpaClone, https://czang409.github.io/highSpaClone/
 BugReports: https://github.com/CZang409/highSpaClone/issues
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
