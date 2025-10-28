@@ -16,8 +16,15 @@ if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 
 devtools::install_github('CZang409/highSpaClone')
+<<<<<<< HEAD
 
 # load package
 library(highSpaClone)
 ```
 
+=======
+```
+
+## Tutorial
+add later
+>>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960

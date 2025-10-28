@@ -210,131 +210,145 @@ createObject <- function(counts,
 #'
 smooth_expr <- function(
     obj,
-    window_size = 101,
-    step = 50,
+    window_size = 101, 
+    step = 50, 
     exclude_chromosomes = c("chrX", "chrY", "chrM"),
     smooth_with_ends = FALSE,
-    use_chunk = TRUE,
+    use_chunk = TRUE,         
     chunk_size = 5000,
     parallel = FALSE,
     n_cores = NULL,
     max_cores = 4
 ){
-
+  
   start_time <- Sys.time()
-
-  # Matrix is required for sparse ops (rBind, classes)
+  
   if (!requireNamespace("Matrix", quietly = TRUE)) {
     stop("Package 'Matrix' is required.")
   }
-
-  # Extract expression matrix
+  
+  ## ====== Extract expression matrix and normalize ======
   expr <- obj@counts.data
-
-  # normalization
+  original_colnames <- colnames(expr)
   expr <- normalize_data(expr)
-
+  
   step1_time <- Sys.time()
   cat("Normalization time: ", difftime(step1_time, start_time, units="secs"), " seconds\n")
-
+  
   # Check if sparse and keep it sparse
   is_sparse <- inherits(expr, "sparseMatrix")
   if (is_sparse) {
     expr <- as(expr, "CsparseMatrix")
     cat("Working with sparse matrix format (keeping sparse)\n")
   }
-
+  
   var <- obj@gene_order
   n_cells <- ncol(expr)
-
   cat("Total cells: ", n_cells, "\n")
-
+  
   # Decide whether to use chunking
   if (use_chunk && n_cells > chunk_size) {
     # ===== CHUNKING MODE =====
     cat("\n=== Chunking mode enabled ===\n")
     cat("Processing in chunks of size ", chunk_size, "...\n")
-
+    
     # Split cells into chunks
     n_chunks <- ceiling(n_cells / chunk_size)
     chunk_indices <- split(1:n_cells, ceiling(seq_along(1:n_cells) / chunk_size))
-
+    
     cat("Total chunks: ", n_chunks, "\n")
-
+    
     # Choose processing method based on parallel parameter
     if (parallel) {
       cat("=== Parallel processing enabled ===\n")
-
-      # parallel is optional; check only when needed
-      if (!requireNamespace("parallel", quietly = TRUE)) {
-        stop("Package 'parallel' is required for parallel processing.")
-      }
-
+      
       # Check platform
       is_unix <- .Platform$OS.type == "unix"
-
+      
       # Determine number of cores to use
       if (is.null(n_cores)) {
-        n_cores <- parallel::detectCores() - 1L
-        n_cores <- max(1L, n_cores)
+        n_cores <- parallel::detectCores() - 1
+        n_cores <- max(1, n_cores)
       }
-
+      
       # Apply max_cores limit
       n_cores <- min(n_cores, max_cores, n_chunks)
+      
       cat("Requested cores: ", n_cores, " (max_cores limit: ", max_cores, ")\n")
-
-
+      
+      if (is_unix) {
+        # Unix/Linux/Mac: use mclapply
+        cat("Unix system detected: using mclapply\n")
+        cat("Using ", n_cores, " cores\n")
+        
         # Estimate memory
         expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
         estimated_memory_gb <- expr_size_gb * n_cores * 1.5
         cat("Estimated memory usage: ~", round(estimated_memory_gb, 2), " GB\n")
-
+        
         if (estimated_memory_gb > 50) {
-          warning("High memory usage estimated (", round(estimated_memory_gb, 2),
+          warning("High memory usage estimated (", round(estimated_memory_gb, 2), 
                   " GB). Consider reducing n_cores or max_cores, or using parallel=FALSE.")
         }
-
-
-        if (is_unix) {
-          cat("Unix system detected: using mclapply\n")
-          cat("Using ", n_cores, " cores\n")
-
-        chunk_results <- parallel::mclapply(seq_along(chunk_indices), function(i) {
+        
+        if (!requireNamespace("parallel", quietly = TRUE)) {
+          stop("Package 'parallel' is required for parallel processing.")
+        }
+        
+        library(parallel)
+        chunk_results <- mclapply(seq_along(chunk_indices), function(i) {
           if (i %% 5 == 0) cat("Processing chunk", i, "of", n_chunks, "\n")
           indices <- chunk_indices[[i]]
           expr_chunk <- expr[, indices, drop = FALSE]
-          results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes,
+          results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
                                     window_size, step, smooth_with_ends)
           return(results$x_smoothed)
         }, mc.cores = n_cores)
-
+        
       } else {
+        # Windows: use parLapply
         cat("Windows system detected: using parLapply\n")
         cat("Using ", n_cores, " cores\n")
-
+        
+        # Estimate memory
+        expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
+        estimated_memory_gb <- expr_size_gb * n_cores * 1.5
+        cat("Estimated memory usage: ~", round(estimated_memory_gb, 2), " GB\n")
+        
+        if (estimated_memory_gb > 50) {
+          warning("High memory usage estimated (", round(estimated_memory_gb, 2), 
+                  " GB). Consider reducing n_cores or max_cores, or using parallel=FALSE.")
+        }
+        
+        if (!requireNamespace("parallel", quietly = TRUE)) {
+          stop("Package 'parallel' is required for parallel processing.")
+        }
+        
         # Create cluster
         cl <- parallel::makeCluster(n_cores)
-
+        
         # Export necessary objects
-        parallel::clusterExport(cl,
-                                c("infercnv_chunk", "running_mean_by_chromosome",
+        parallel::clusterExport(cl, 
+                                c("infercnv_chunk", "running_mean_by_chromosome", 
                                   "running_mean_for_chromosome", "running_mean",
                                   "smooth_with_ends_internal", "sort_chromosomes",
-                                  "var", "exclude_chromosomes", "window_size",
+                                  "var", "exclude_chromosomes", "window_size", 
                                   "step", "smooth_with_ends", "chunk_indices"),
                                 envir = environment())
-
+        
         # Load required packages on each worker
-        parallel::clusterEvalQ(cl, { base::loadNamespace("Matrix"); NULL })
-        parallel::clusterEvalQ(cl, { base::loadNamespace("dplyr"); NULL })
-
+        parallel::clusterEvalQ(cl, {
+          library(dplyr)
+          library(Matrix)
+        })
+        
         # Process chunks
         chunk_results <- tryCatch({
           parallel::parLapply(cl, seq_along(chunk_indices), function(i) {
             if (i %% 5 == 0) cat("Processing chunk", i, "of", length(chunk_indices), "\n")
             indices <- chunk_indices[[i]]
             expr_chunk <- expr[, indices, drop = FALSE]
-            results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes,
+            results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
                                       window_size, step, smooth_with_ends)
             return(results$x_smoothed)
           })
@@ -342,37 +356,37 @@ smooth_expr <- function(
           parallel::stopCluster(cl)
         })
       }
-
+      
       cat("Parallel processing completed.\n")
-
+      
     } else {
       # Sequential processing with chunks
       cat("=== Sequential chunk processing ===\n")
       cat("Processing ", n_chunks, " chunks sequentially...\n")
-
+      
       chunk_results <- lapply(seq_along(chunk_indices), function(i) {
         if (i %% 5 == 0 || i == 1 || i == n_chunks) {
-          cat("Processing chunk", i, "of", n_chunks,
+          cat("Processing chunk", i, "of", n_chunks, 
               sprintf("(%.1f%% complete)\n", 100*i/n_chunks))
         }
         indices <- chunk_indices[[i]]
         expr_chunk <- expr[, indices, drop = FALSE]
-        results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes,
+        results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
                                   window_size, step, smooth_with_ends)
-
+        
         # Free memory
         rm(expr_chunk)
         if (i %% 10 == 0) gc(verbose = FALSE)
-
+        
         return(results$x_smoothed)
       })
-
+      
       cat("Sequential chunk processing completed.\n")
     }
-
+    
     # Combine results - use sparse-friendly method if applicable
     cat("Combining results...\n")
-
+    
     # Check if results are sparse
     if (inherits(chunk_results[[1]], "sparseMatrix")) {
       cat("Combining sparse matrices...\n")
@@ -383,20 +397,25 @@ smooth_expr <- function(
       res <- do.call(rbind, chunk_results)
     }
 
+    chunk_rownames <- unlist(lapply(chunk_indices, function(idx) original_colnames[idx]),
+                         use.names = FALSE)
+    stopifnot(length(chunk_rownames) == nrow(res))
+    rownames(res) <- chunk_rownames
+    
     cat("Result class: ", class(res)[1], "\n")
     cat("Result dimensions: ", dim(res)[1], " x ", dim(res)[2], "\n")
-
+    
     # Free memory
     rm(chunk_results)
     gc(verbose = FALSE)
-
+    
     # Get chr_pos from first chunk
     cat("Calculating chromosome positions...\n")
-    chr_pos_result <- infercnv_chunk(expr[, 1:min(100, n_cells), drop = FALSE],
-                                     var, exclude_chromosomes,
+    chr_pos_result <- infercnv_chunk(expr[, 1:min(100, n_cells), drop = FALSE], 
+                                     var, exclude_chromosomes, 
                                      window_size, step, smooth_with_ends)
     chr_pos <- chr_pos_result$chr_pos
-
+    
   } else {
     # ===== NO CHUNKING MODE =====
     if (!use_chunk) {
@@ -405,139 +424,103 @@ smooth_expr <- function(
       cat("\n=== Cell count below chunk size ===\n")
     }
     cat("Processing all ", n_cells, " cells at once...\n")
-
+    
     # Estimate memory for full processing
     expr_size_gb <- as.numeric(object.size(expr)) / (1024^3)
     cat("Expression matrix size: ~", round(expr_size_gb, 2), " GB\n")
-
+    
     if (expr_size_gb > 10) {
-      warning("Large matrix detected (", round(expr_size_gb, 2),
+      warning("Large matrix detected (", round(expr_size_gb, 2), 
               " GB). Consider using use_chunk=TRUE to reduce memory usage.")
     }
-
+    
     # Process all cells at once
     cat("Running smoothing on all cells...\n")
-    results <- infercnv_chunk(expr, var, exclude_chromosomes,
+    results <- infercnv_chunk(expr, var, exclude_chromosomes, 
                               window_size, step, smooth_with_ends)
     chr_pos <- results$chr_pos
     res <- results$x_smoothed
-
+    rownames(res) <- original_colnames
+    
     cat("Result class: ", class(res)[1], "\n")
     cat("Result dimensions: ", dim(res)[1], " x ", dim(res)[2], "\n")
-
+    
     cat("No-chunk processing completed.\n")
   }
-
+  
   # Store results - keep the original format
   cat("\nStoring results in object...\n")
 
-  # Don't convert to dense matrix - keep whatever format it is
-  rownames(res) <- colnames(obj@counts.data)
   obj@smoothed.data <- res
   obj@chr_pos <- chr_pos
-
+  
   cat("Results successfully stored.\n")
-
+  
   end_time <- Sys.time()
   total_time <- difftime(end_time, start_time, units="mins")
   cat("\n========================================\n")
   cat("Total running time: ", round(total_time, 2), " minutes\n")
   cat("========================================\n")
-
+  
   return(obj)
 }
 
 
-# Helper function to run convolution for each chromosome
-infercnv_chunk <- function(expr, var, exclude_chromosomes, window_size, step, smooth_with_ends) {
+## ====== Helper functions ======
 
+infercnv_chunk <- function(expr, var, exclude_chromosomes, window_size, step, smooth_with_ends) {
   running_means <- running_mean_by_chromosome(expr, var, exclude_chromosomes,
                                               window_size, step, smooth_with_ends)
-
   list(
-    chr_pos = running_means$chr_pos,
+    chr_pos    = running_means$chr_pos,
     x_smoothed = running_means$x_smoothed
   )
-
 }
 
 sort_chromosomes <- function(l) {
-
   extract_number <- function(text) {
-
     num <- as.integer(gsub("[^0-9]", "", text))
     return(num)
   }
-
-  return(l[order(sapply(l, extract_number))])
+  l[order(sapply(l, extract_number))]
 }
 
 normalize_data <- function(expr, size_factor = NULL) {
-
   if (is.null(size_factor)) {
-    cs <- Matrix::colSums(expr)
+    if (inherits(expr, "sparseMatrix")) {
+      cs <- Matrix::colSums(expr, na.rm = TRUE)
+    } else {
+      expr[is.na(expr)] <- 0
+      cs <- Matrix::colSums(expr, na.rm = TRUE)
+    }
     cs[cs == 0] <- 1
     size_factor <- stats::median(cs) / cs
   }
-
   if (inherits(expr, "sparseMatrix")) {
     normalized_data <- expr %*% Matrix::Diagonal(x = as.numeric(size_factor))
   } else {
     normalized_data <- sweep(as.matrix(expr), MARGIN = 2, STATS = size_factor, FUN = "*")
   }
-
-  return(normalized_data)
-}
-
-running_mean_for_chromosome <- function(chr, expr, var, window_size, step, smooth_with_ends) {
-  idx <- which(var$chromosome == chr)
-  if (length(idx) == 0L) {
-    return(list(smoothed_x = matrix(numeric(0), nrow = ncol(expr), ncol = 0)))
-  }
-
-  ord <- order(var$start[idx], na.last = TRUE)
-  genes_chr <- rownames(var)[idx][ord]
-
-  keep <- genes_chr[genes_chr %in% rownames(expr)]
-  if (length(keep) == 0L) {
-    return(list(smoothed_x = matrix(numeric(0), nrow = ncol(expr), ncol = 0)))
-  }
-
-  expr_chr <- expr[keep, , drop = FALSE]
-
-  running_mean_res <- running_mean(expr_chr, window_size, step, smooth_with_ends)
-
-  smoothed_x <- running_mean_res$smoothed_x
-  if (!is.matrix(smoothed_x)) smoothed_x <- as.matrix(smoothed_x)
-  list(smoothed_x = smoothed_x)
+  normalized_data
 }
 
 running_mean_by_chromosome <- function(expr, var, exclude_chromosomes, window_size, step, smooth_with_ends) {
+  
   if (!is.null(exclude_chromosomes)) {
-    var <- var[!(var$chromosome %in% exclude_chromosomes), ]
+    var <- var[!(var$chromosome %in% exclude_chromosomes),]
   }
-
+  
   chromosomes <- unique(var$chromosome)
   chromosomes <- sort_chromosomes(chromosomes)
-
+  
+  
   running_means <- lapply(chromosomes, function(chr) {
     running_mean_for_chromosome(chr, expr, var, window_size, step, smooth_with_ends)
   })
-
+  
   names(running_means) <- chromosomes
   running_means_list <- lapply(running_means, `[[`, 1)
-
-  non_empty <- sapply(running_means_list, function(x) ncol(x) > 0)
-  running_means_list <- running_means_list[non_empty]
-  chromosomes <- chromosomes[non_empty]
-  if (length(running_means_list) == 0) stop("No valid chromosome data after filtering")
-
-  x_smoothed <- do.call(cbind, running_means_list)
-  if (is.null(rownames(x_smoothed)) || anyNA(rownames(x_smoothed))) {
-    rn <- rownames(running_means_list[[1]])
-    if (!is.null(rn)) rownames(x_smoothed) <- rn
-  }
-
+  
   chr_start_pos <- list()
   chr_pos_offset <- 0
   for (i in seq_along(chromosomes)) {
@@ -545,16 +528,30 @@ running_mean_by_chromosome <- function(expr, var, exclude_chromosomes, window_si
     chr_pos_offset <- chr_pos_offset + ncol(running_means_list[[i]])
   }
   names(chr_start_pos) <- chromosomes
-
-  name_vectors <- unlist(lapply(seq_along(running_means_list), function(i){
-    n <- ncol(running_means_list[[i]])
-    paste(chromosomes[i], seq_len(n), sep = "_")
-  }), use.names = FALSE)
+  
+  x_smoothed <- do.call(cbind, running_means_list)
+  
+  name_vectors <- c()
+  for (list_name in names(running_means_list)) {
+    current_matrix <- running_means_list[[list_name]]
+    n <- ncol(current_matrix)
+    name_vector <- paste(list_name, 1:n, sep = "_")
+    name_vectors <- c(name_vectors,name_vector)
+  }
+  
   colnames(x_smoothed) <- name_vectors
-
-  list(chr_pos = chr_start_pos, x_smoothed = x_smoothed)
+  
+  return(list(chr_pos = chr_start_pos, x_smoothed = x_smoothed))
 }
 
+running_mean_for_chromosome <- function(chr, expr, var, window_size, step, smooth_with_ends) {
+  
+  genes <- var %>% filter(chromosome == chr) %>% arrange(start) %>% rownames()
+  expr_chr <- expr[which(rownames(expr) %in% genes),,drop=FALSE]
+  running_mean_res <- running_mean(expr_chr, window_size, step, smooth_with_ends)
+  
+  return(running_mean_res)
+}
 
 smooth_with_ends_internal <- function(x, pyramid) {
   n <- length(pyramid)
@@ -582,31 +579,68 @@ smooth_with_ends_internal <- function(x, pyramid) {
     numerator_range_right <- numerator_counts_vector[(tail_length + 1 - d_left):(tail_length + 1 + d_right)]
     smoothed[end_tail] <- sum(right_chunk * rev(numerator_range_right)) / denominator
   }
-
-  return(smoothed)
+  smoothed
 }
-
 
 running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
-
-
-  x <- Matrix::t(x)
-  if (n < 2) return(list(smoothed_x = Matrix::t(x)))
-
-  if (n < ncol(x)) {
-    pyramid <- pmin(1:n, rev(1:n))
-    smoothed_x <- if (smooth_with_ends) {
-      t(apply(x, 1, function(row) smooth_with_ends_internal(row, pyramid)))
-    } else {
-      t(apply(x, 1, function(row) stats::convolve(row, pyramid, type = "filter"))) / sum(pyramid)
+  
+  if (inherits(x, "sparseMatrix")) {
+    x <- Matrix::t(x)
+    if (is.vector(x) || (is.matrix(x) && length(dim(x)) != 2)) {
+      x <- as(x, "CsparseMatrix")
     }
-    smoothed_x <- smoothed_x[, seq(1, ncol(smoothed_x), by = step), drop = FALSE]
   } else {
-    pyramid <- rep(1, ncol(x))
-    smoothed_x <- apply(x, 1, function(row) stats::convolve(row, pyramid, type = "filter")) / sum(pyramid)
-    if (is.vector(smoothed_x)) smoothed_x <- matrix(smoothed_x, nrow = length(smoothed_x), ncol = 1)
-    smoothed_x <- if (nrow(x) == 1) matrix(smoothed_x, nrow = 1) else Matrix::t(smoothed_x)
+    x <- t(x)
+    if (!is.matrix(x)) {
+      x <- as.matrix(x)
+    }
   }
+  
+  if (n < 2) {
+    print("window length < 2, returning original unmodified data")
+    return(x)
+    
+  } else if (n < ncol(x)) {
+    
+    pyramid <- pmin(1:n, rev(1:n))
+    
+    smoothed_x <- if (smooth_with_ends) {
+      Matrix::t(apply(x, 1, function(row) {
+        smooth_with_ends_internal(row, pyramid)
+      }))
+    } else {
 
-  list(smoothed_x = smoothed_x)
+      if (inherits(x, "sparseMatrix")) {
+        result <- Matrix::t(apply(x, 1, function(row) {
+          if (inherits(row, "sparseVector")) {
+            row <- as.numeric(row)
+          }
+          stats::convolve(row, pyramid, type = "filter")
+        })) / sum(pyramid)
+        result
+      } else {
+        Matrix::t(apply(x, 1, function(row) {
+          stats::convolve(row, pyramid, type = "filter")
+        })) / sum(pyramid)
+      }
+    }
+    
+    smoothed_x <- smoothed_x[, seq(1, ncol(smoothed_x), by = step), drop = FALSE]
+    return(list(smoothed_x = smoothed_x))
+    
+  } else {
+    
+    pyramid <- rep(1, ncol(x))
+    smoothed_x <- apply(x, 1, function(row) {
+      if (inherits(row, "sparseVector")) {
+        row <- as.numeric(row)
+      }
+      stats::convolve(row, pyramid, type = "filter")
+    }) / sum(pyramid)
+    
+    smoothed_x <- as.matrix(smoothed_x)
+    return(list(smoothed_x = smoothed_x))
+  }
 }
+
+

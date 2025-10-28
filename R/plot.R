@@ -19,10 +19,14 @@
 #'
 #' @examples
 #' \dontrun{
+<<<<<<< HEAD
 #' p <- spatialplot(cnv_obj,
 #'                  point_size = 0.01,
 #'                  use_x_reverse = T,
 #'                  use_coord_flip = T,
+=======
+#' p <- spatialplot(cnv_obj, point_size = 0.01, use_coord_flip = T, use_x_reverse = T,
+>>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
 #'                  title = "Tumor subclones")
 #' print(p)
 #' }
@@ -33,6 +37,7 @@ spatialplot <- function(cnv_obj,
                         point_size = 0.01,
                         use_x_reverse = FALSE,
                         use_coord_flip = FALSE,
+                        use_x_reverse = FALSE,
                         title = "") {
   # --- input ---
   df <- cnv_obj@cluster
@@ -64,7 +69,11 @@ spatialplot <- function(cnv_obj,
   }
 
   if (isTRUE(use_x_reverse)) {
+<<<<<<< HEAD
     p <- p + scale_x_reverse()
+=======
+    p <- p + ggplot2::scale_x_reverse()
+>>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
   }
 
   return(p)

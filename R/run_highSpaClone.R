@@ -128,7 +128,7 @@ FindTumor <- function(
 
   for(iter in 1:max_iter){
 
-    if(iter %% 50 == 0 || iter == 1){
+    if(iter %% 25 == 0 || iter == 1){
       cat("Iteration ", iter, " / ", max_iter, "\n")
     }
 
@@ -322,7 +322,11 @@ FindClone <- function(
   cat("\n[Step 1] Preparing data...\n")
 
   # 1) CNV matrix: transpose to (bins x cells) and add small epsilon to avoid zeros
+<<<<<<< HEAD
   cnv <- Matrix::t(obj@smoothed.data)
+=======
+  cnv <- t(obj@smoothed.data)
+>>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
   cnv <- as.matrix(cnv)
   eps <- 1e-6
   cnv <- cnv + eps
@@ -563,7 +567,7 @@ FindClone <- function(
 #' @param tumor.id Character vector of tumor **cell IDs**.
 #'   If both tumor label/IDs are absent, all non-reference cells are used.
 #' @param k_range Integer vector of K values to evaluate.
-#' @param n_sub Integer. Max number of cells to subsample for evaluation (default: 5000).
+#' @param n_sub Integer. Max number of cells to subsample for evaluation (default: 10000).
 #' @param alpha \code{NULL} for CNV-only. If a number in \code{[0,1]},
 #'   fuse CNV and spatial distances: \eqn{d = alpha * d_{CNV} + (1-alpha) * d_{spatial}} (default: 0.7).
 #' @param seed Integer seed for reproducibility.
@@ -588,7 +592,7 @@ suggest_k <- function(
     tumor,
     tumor.id = NULL,
     k_range = 2:8,
-    n_sub = 5000,
+    n_sub = 10000,
     alpha = 0.7,
     seed = 123,
     out_dir = "figs_k"
