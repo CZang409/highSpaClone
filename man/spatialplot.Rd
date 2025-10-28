@@ -21,14 +21,8 @@ spatialplot(
 
 \item{point_size}{Numeric point size passed to \code{geom_point()}.}
 
-\item{use_x_reverse}{Logical; if \code{TRUE}, reverses the x-axis direction
-(i.e., flips the plot horizontally). This option is useful when the
-spatial coordinates are mirrored relative to the original histology image
-or when you want to align the orientation with external annotations.
-Default is \code{FALSE}.}
-
-\item{use_coord_flip}{Logical; if \code{TRUE}, flips the coordinate axes (useful when the
-image orientation requires rotation). Default is \code{FALSE}.}
+\item{use_coord_flip}{Logical; if \code{TRUE}, apply \code{ggplot2::coord_flip()}
+to swap axes after reversing x (default \code{FALSE}).}
 
 \item{use_x_reverse}{Logical; if \code{TRUE}, reverses the x-axis direction
 (i.e., flips the plot horizontally). This option is useful when the
@@ -45,14 +39,7 @@ clone label.
 }
 \examples{
 \dontrun{
-<<<<<<< HEAD
-p <- spatialplot(cnv_obj,
-                 point_size = 0.01,
-                 use_x_reverse = T,
-                 use_coord_flip = T,
-=======
 p <- spatialplot(cnv_obj, point_size = 0.01, use_coord_flip = T, use_x_reverse = T,
->>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
                  title = "Tumor subclones")
 print(p)
 }
