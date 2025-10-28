@@ -22,5 +22,5 @@ library(highSpaClone)
 ```
 
 ## Tutorial
-Please see the [highSpaClone tutorial website](czang409.github.io/highSpaClone/).
+Please see the [highSpaClone tutorial website](https://czang409.github.io/highSpaClone/).
 
