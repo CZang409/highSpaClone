@@ -239,7 +239,7 @@ labels.</li>
 <code class="sourceCode R"><span><span class="co"># Tumor segmentation</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindTumor.html">FindTumor</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
 <span>                 ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B Cells"</span>, <span class="st">"CD4+ T Cells"</span>, <span class="st">"CD8+ T Cells"</span>, </span>
-<span>                 <span class="st">"Macrophages 1"</span>, <span class="st">"Macrophages 2"</span>, <span class="st">"Endothelial"</span><span class="op">)</span><span class="op">)</span></span>
+<span>                 <span class="st">"Macrophages"</span>, <span class="st">"Endothelial"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ========================================</span></span>
 <span><span class="co">#&gt; Start Tumor Annotation...</span></span>
 <span><span class="co">#&gt; ========================================</span></span>
@@ -294,7 +294,7 @@ CNV in clustering.</li>
 <span><span class="fu"><a href="../reference/suggest_k.html">suggest_k</a></span><span class="op">(</span></span>
 <span>    obj<span class="op">=</span><span class="va">smooth_obj</span>,</span>
 <span>    ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B Cells"</span>, <span class="st">"CD4+ T Cells"</span>, <span class="st">"CD8+ T Cells"</span>, </span>
-<span>          <span class="st">"Macrophages 1"</span>, <span class="st">"Macrophages 2"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
+<span>          <span class="st">"Macrophages"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
 <span>    tumor<span class="op">=</span><span class="st">"Invasive Tumor"</span>,</span>
 <span>    k_range <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">8</span>,</span>
 <span>    n_sub <span class="op">=</span> <span class="fl">500</span>,</span>
@@ -340,7 +340,7 @@ if supported by CNV evidence. The number of subclones to infer is set by
 <code class="sourceCode R"><span><span class="co"># Spatial CNV inference and tumor subclone detection</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span>obj<span class="op">=</span><span class="va">smooth_obj</span>,</span>
 <span>                 ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B Cells"</span>, <span class="st">"CD4+ T Cells"</span>, <span class="st">"CD8+ T Cells"</span>, </span>
-<span>                      <span class="st">"Macrophages 1"</span>, <span class="st">"Macrophages 2"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
+<span>                      <span class="st">"Macrophages"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
 <span>                 tumor<span class="op">=</span><span class="st">"Invasive Tumor"</span>,</span>
 <span>                 K<span class="op">=</span><span class="fl">3</span>,</span>
 <span>                 lambda<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
