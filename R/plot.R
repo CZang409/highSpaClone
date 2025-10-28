@@ -19,14 +19,7 @@
 #'
 #' @examples
 #' \dontrun{
-<<<<<<< HEAD
-#' p <- spatialplot(cnv_obj,
-#'                  point_size = 0.01,
-#'                  use_x_reverse = T,
-#'                  use_coord_flip = T,
-=======
 #' p <- spatialplot(cnv_obj, point_size = 0.01, use_coord_flip = T, use_x_reverse = T,
->>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
 #'                  title = "Tumor subclones")
 #' print(p)
 #' }
@@ -35,7 +28,6 @@
 spatialplot <- function(cnv_obj,
                         colors = c("#ebe5c2","#D57358","#8a508f","#023047","#E64B35","#4DBBD5","#00A087","#3C5488","#F39B7F","#8491B4","#91D1C2","#DC0000","#7E6148","#B09C85"),
                         point_size = 0.01,
-                        use_x_reverse = FALSE,
                         use_coord_flip = FALSE,
                         use_x_reverse = FALSE,
                         title = "") {
@@ -69,11 +61,7 @@ spatialplot <- function(cnv_obj,
   }
 
   if (isTRUE(use_x_reverse)) {
-<<<<<<< HEAD
-    p <- p + scale_x_reverse()
-=======
     p <- p + ggplot2::scale_x_reverse()
->>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
   }
 
   return(p)
@@ -321,6 +309,5 @@ cnv_heatmap <- function(
 
   invisible(ht_list)
 }
-
 
 
