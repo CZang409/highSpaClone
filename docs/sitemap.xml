@@ -1,0 +1,24 @@
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/articles/Data.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/Intro_to_highSpaClone.html</loc></url>
+<url><loc>/articles/visiumhd_colon_code.html</loc></url>
+<url><loc>/articles/xenium_breast1_code.html</loc></url>
+<url><loc>/articles/xenium_breast2_code.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/data/Data.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/LICENSE.html</loc></url>
+<url><loc>/reference/cnv_heatmap.html</loc></url>
+<url><loc>/reference/createObject.html</loc></url>
+<url><loc>/reference/FindClone.html</loc></url>
+<url><loc>/reference/FindTumor.html</loc></url>
+<url><loc>/reference/highSpaClone-class.html</loc></url>
+<url><loc>/reference/highSpaClone-package.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/smooth_expr.html</loc></url>
+<url><loc>/reference/spatialplot.html</loc></url>
+<url><loc>/reference/suggest_k.html</loc></url>
+</urlset>
+
