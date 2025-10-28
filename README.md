@@ -21,4 +21,6 @@ devtools::install_github('CZang409/highSpaClone')
 library(highSpaClone)
 ```
 
+## Tutorial
+Please see the [highSpaClone tutorial website](czang409.github.io/highSpaClone/).
 
