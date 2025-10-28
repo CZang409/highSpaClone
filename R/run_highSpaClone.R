@@ -322,11 +322,7 @@ FindClone <- function(
   cat("\n[Step 1] Preparing data...\n")
 
   # 1) CNV matrix: transpose to (bins x cells) and add small epsilon to avoid zeros
-<<<<<<< HEAD
-  cnv <- Matrix::t(obj@smoothed.data)
-=======
   cnv <- t(obj@smoothed.data)
->>>>>>> 1d466026aaf102cb82d912c520b27e69660c5960
   cnv <- as.matrix(cnv)
   eps <- 1e-6
   cnv <- cnv + eps
@@ -840,4 +836,3 @@ kmeansFunc_Iter <- function(data,k,centers_old = NULL,seed=12345678){
   }
   return(resList)
 }
-
