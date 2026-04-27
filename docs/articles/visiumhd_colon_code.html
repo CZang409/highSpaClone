@@ -91,7 +91,7 @@
 <span><span class="va">smooth_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/smooth_expr.html">smooth_expr</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj</span>, parallel <span class="op">=</span> <span class="cn">T</span>, use_chunk <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># tumor identification</span></span>
-<span><span class="va">tumor_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
+<span><span class="va">tumor_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindTumor</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
 <span>                      ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B cells"</span>,<span class="st">"T cells"</span>, <span class="st">"Smooth Muscle"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
 <span>                      K<span class="op">=</span><span class="fl">2</span>,</span>
 <span>                      lambda<span class="op">=</span><span class="fl">0.001</span><span class="op">)</span></span>
@@ -150,7 +150,7 @@
 <span><span class="va">smooth_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/smooth_expr.html">smooth_expr</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj</span>, parallel <span class="op">=</span> <span class="cn">T</span>, use_chunk <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># tumor identification</span></span>
-<span><span class="va">tumor_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
+<span><span class="va">tumor_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindTumor</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
 <span>                      ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B cells"</span>,<span class="st">"T cells"</span>, <span class="st">"Smooth Muscle"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
 <span>                      K<span class="op">=</span><span class="fl">2</span>,</span>
 <span>                      lambda<span class="op">=</span><span class="fl">0.001</span><span class="op">)</span></span>
@@ -209,7 +209,7 @@
 <span><span class="va">smooth_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/smooth_expr.html">smooth_expr</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj</span>, parallel <span class="op">=</span> <span class="cn">T</span>, use_chunk <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># tumor identification</span></span>
-<span><span class="va">tumor_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
+<span><span class="va">tumor_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindTumor</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
 <span>                      ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B cells"</span>,<span class="st">"T cells"</span>, <span class="st">"Smooth Muscle"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
 <span>                      K<span class="op">=</span><span class="fl">2</span>,</span>
 <span>                      lambda<span class="op">=</span><span class="fl">0.001</span><span class="op">)</span></span>
