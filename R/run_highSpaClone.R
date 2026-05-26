@@ -360,7 +360,7 @@ FindClone <- function(
     label$cell.id[label$cell.label %in% tumor]
   } else character(0)
 
-  tumor_ids <- unique(c(tumor_ids_from_label, tumor.id))
+  tumor_ids <- unique(c(tumor_ids_from_label, as.character(tumor.id)))
   tumor_ids <- intersect(tumor_ids, all_cells)
 
   if (length(tumor_ids) == 0) {
@@ -614,7 +614,7 @@ suggest_k <- function(
   if (length(ref_ids) == 0) stop("No reference cells found. Check `ref` / `ref.id`.")
 
   tumor_ids_from_label <- if (!is.null(tumor)) label$cell.id[label$cell.label %in% tumor] else character(0)
-  tumor_ids <- unique(c(tumor_ids_from_label, tumor.id))
+  tumor_ids <- unique(c(tumor_ids_from_label, as.character(tumor.id)))
   tumor_ids <- intersect(tumor_ids, all_cells)
   if (length(tumor_ids) == 0) {
     tumor_ids <- setdiff(all_cells, ref_ids)
