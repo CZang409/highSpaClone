@@ -340,7 +340,7 @@ FindClone <- function(
     label$cell.id[label$cell.label %in% ref]
   } else character(0)
 
-  ref_ids <- unique(c(ref_ids_from_label, ref.id))
+  ref_ids <- unique(c(ref_ids_from_label, as.character(ref.id)))
   ref_ids <- intersect(ref_ids, all_cells)
 
   cat("Reference cell types (ref): ",
