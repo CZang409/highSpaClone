@@ -735,39 +735,96 @@ suggest_k <- function(
 
 ################################################################################################
 ###internal functions
-createA <- function(location) {
+createA <- function(location,
+                    k = 10,
+                    weighted = FALSE,
+                    sigma = NULL,
+                    mutual = TRUE,
+                    row_standardize = FALSE) {
   location <- as.data.frame(location)
-  norm_cords <- location[, c("x", "y")]
 
-  # normalize to [0, 1] range
-  norm_cords$x <- norm_cords$x - min(norm_cords$x)
-  norm_cords$y <- norm_cords$y - min(norm_cords$y)
-  scaleFactor <- max(norm_cords$x, norm_cords$y)
-  norm_cords$x <- norm_cords$x / scaleFactor
-  norm_cords$y <- norm_cords$y / scaleFactor
-  rownames(norm_cords) <- rownames(location)
-
-  # find 10 nearest neighbors (excluding self)
-  ineibor <- 11
-  near_data <- RANN::nn2(norm_cords[, 1:2], k = ineibor)
-  neighbors <- near_data$nn.idx[, -1]
-
-  # build sparse adjacency matrix
-  Nmat <- Matrix::Matrix(0, nrow = nrow(neighbors), ncol = nrow(neighbors), sparse = TRUE)
-  for (icol in 1:ncol(neighbors)) {
-    edges <- data.frame(i = 1:nrow(neighbors), j = neighbors[, icol])
-    adjacency <- Matrix::sparseMatrix(
-      i = as.integer(edges$i),
-      j = as.integer(edges$j),
-      x = 1,
-      dims = rep(nrow(neighbors), 2),
-      use.last.ij = TRUE
-    )
-    Nmat <- Nmat + adjacency
+  if (!all(c("x", "y") %in% colnames(location))) {
+    stop("location must contain columns named 'x' and 'y'.")
   }
 
-  # keep only mutual neighbors
-  Nmat <- Nmat * Matrix::t(Nmat)
+  norm_cords <- location[, c("x", "y")]
+
+  # Normalize coordinates to [0, 1] range while preserving aspect ratio
+  norm_cords$x <- norm_cords$x - min(norm_cords$x, na.rm = TRUE)
+  norm_cords$y <- norm_cords$y - min(norm_cords$y, na.rm = TRUE)
+
+  scaleFactor <- max(norm_cords$x, norm_cords$y, na.rm = TRUE)
+
+  if (scaleFactor == 0) {
+    stop("All spatial coordinates are identical; cannot construct spatial graph.")
+  }
+
+  norm_cords$x <- norm_cords$x / scaleFactor
+  norm_cords$y <- norm_cords$y / scaleFactor
+
+  rownames(norm_cords) <- rownames(location)
+
+  # Find k nearest neighbors excluding self
+  near_data <- RANN::nn2(norm_cords[, c("x", "y")], k = k + 1)
+
+  neighbors <- near_data$nn.idx[, -1, drop = FALSE]
+  distances <- near_data$nn.dists[, -1, drop = FALSE]
+
+  n <- nrow(norm_cords)
+
+  i_idx <- rep(seq_len(n), times = k)
+  j_idx <- as.vector(neighbors)
+
+  if (!weighted) {
+    weights <- rep(1, length(j_idx))
+  } else {
+    d <- as.vector(distances)
+
+    if (is.null(sigma)) {
+      sigma <- stats::median(d[d > 0], na.rm = TRUE)
+    }
+
+    if (is.na(sigma) || sigma <= 0) {
+      stop("Invalid sigma. Please provide a positive sigma value.")
+    }
+
+    weights <- exp(-(d^2) / (2 * sigma^2))
+  }
+
+  # Build sparse adjacency matrix
+  Nmat <- Matrix::sparseMatrix(
+    i = as.integer(i_idx),
+    j = as.integer(j_idx),
+    x = weights,
+    dims = c(n, n),
+    use.last.ij = TRUE
+  )
+
+  # Keep only mutual nearest-neighbor edges if requested
+  if (mutual) {
+    if (!weighted) {
+      Nmat <- Nmat * Matrix::t(Nmat)
+    } else {
+      mutual_mask <- (Nmat > 0) * (Matrix::t(Nmat) > 0)
+      Nmat <- ((Nmat + Matrix::t(Nmat)) / 2) * mutual_mask
+    }
+  } else {
+    # Symmetrize graph
+    if (!weighted) {
+      Nmat <- (Nmat + Matrix::t(Nmat)) > 0
+      Nmat <- Matrix::Matrix(Nmat + 0, sparse = TRUE)
+    } else {
+      Nmat <- (Nmat + Matrix::t(Nmat)) / 2
+    }
+  }
+
+  # Optional row standardization
+  if (row_standardize) {
+    rs <- Matrix::rowSums(Nmat)
+    rs[rs == 0] <- 1
+    Nmat <- Matrix::Diagonal(x = 1 / rs) %*% Nmat
+  }
+
   rownames(Nmat) <- colnames(Nmat) <- rownames(norm_cords)
 
   return(Nmat)
