@@ -350,7 +350,7 @@ FindClone <- function(
 
   # Reference set (by types and/or IDs), then intersect with existing cells
   ref_ids_from_label <- if (!missing(ref) && !is.null(ref)) {
-    label$cell.id[label$cell.label %in% ref]
+    as.character(label$cell.id[label$cell.label %in% ref]) 
   } else character(0)
 
   ref_ids <- unique(c(ref_ids_from_label, as.character(ref.id)))
@@ -370,7 +370,7 @@ FindClone <- function(
 
   # 4) Tumor set (by types and/or IDs); default to all non-reference cells if not provided
   tumor_ids_from_label <- if (!is.null(tumor)) {
-    label$cell.id[label$cell.label %in% tumor]
+    as.character(label$cell.id[label$cell.label %in% tumor])
   } else character(0)
 
   tumor_ids <- unique(c(tumor_ids_from_label, as.character(tumor.id)))
@@ -626,12 +626,17 @@ suggest_k <- function(
   }
 
   ## ---------- 1) Build ref / tumor sets ----------
-  ref_ids_from_label <- if (!missing(ref) && !is.null(ref)) label$cell.id[label$cell.label %in% ref] else character(0)
+  ref_ids_from_label <- if (!missing(ref) && !is.null(ref)) {
+    as.character(label$cell.id[label$cell.label %in% ref]) 
+  } else character(0)
   ref_ids <- unique(c(ref_ids_from_label, as.character(ref.id)))
   ref_ids <- intersect(ref_ids, all_cells)
   if (length(ref_ids) == 0) stop("No reference cells found. Check `ref` / `ref.id`.")
 
-  tumor_ids_from_label <- if (!is.null(tumor)) label$cell.id[label$cell.label %in% tumor] else character(0)
+  tumor_ids_from_label <- if (!is.null(tumor)) {
+    as.character(label$cell.id[label$cell.label %in% tumor])
+  } else character(0)
+
   tumor_ids <- unique(c(tumor_ids_from_label, as.character(tumor.id)))
   tumor_ids <- intersect(tumor_ids, all_cells)
   if (length(tumor_ids) == 0) {
