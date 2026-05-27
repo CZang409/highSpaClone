@@ -28,7 +28,7 @@
 #'   lambda = 1/1000,
 #'   K = 2,
 #'   max_iter = 300,
-#'   min_iter = 30
+#'   min_iter = 30,
 #' )
 #' head(obj@cluster)
 #' }
@@ -45,6 +45,10 @@ FindTumor <- function(
     max_iter = 500,
     min_iter = 30,
     epsilon = 5e-04,
+    spatial_weighted = FALSE,
+    spatial_sigma = NULL,
+    mutual = TRUE,
+    row_standardize = FALSE,
     seed = 12345678
 ){
 
@@ -91,7 +95,12 @@ FindTumor <- function(
   V <- t(V)
 
   # Create adjacency matrix
-  AMatrix <- createA(spatial_location)
+  AMatrix <- createA(spatial_location,
+  k = 10,
+  weighted = spatial_weighted,
+  sigma = spatial_sigma,
+  mutual = mutual,
+  row_standardize = row_standardize)
   Bins <- colnames(V)
   cnv.df <- getConcated(V, spatial_location)
 
@@ -306,6 +315,10 @@ FindClone <- function(
     ref.id = NULL,
     tumor = NULL,
     tumor.id = NULL,
+    spatial_weighted = FALSE,
+    spatial_sigma = NULL,
+    mutual = TRUE,
+    row_standardize = FALSE,
     lambda = NULL,
     K = NULL,
     max_iter = 500,
@@ -403,7 +416,12 @@ FindClone <- function(
   V <- t(V)  # -> cells x bins (tumor subset)
 
   # Spatial adjacency
-  AMatrix <- createA(spatial_location)
+  AMatrix <- createA(spatial_location,
+  k = 10,
+  weighted = spatial_weighted,
+  sigma = spatial_sigma,
+  mutual = mutual,
+  row_standardize = row_standardize)
 
   # Feature table for clustering
   Bins <- colnames(V)  # gene names
