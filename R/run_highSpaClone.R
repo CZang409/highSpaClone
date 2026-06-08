@@ -39,6 +39,8 @@
 
 FindTumor <- function(
     obj,
+    ref=NULL,
+    ref.id = NULL,
     ref,
     lambda = 1/1000,
     K = 2,
@@ -63,11 +65,22 @@ FindTumor <- function(
 
   # Get annotation
   label <- obj@annotation
-
+    
   # Filter normal reference cells
-  cat("Reference cell types: ", paste(ref, collapse = ", "), "\n")
-  norm <- label %>% filter(cell.label %in% ref)
-  cat("Number of reference cells: ", nrow(norm), "\n")
+  ref_ids_from_label <- if (!missing(ref) && !is.null(ref)) {
+    as.character(label$cell.id[label$cell.label %in% ref]) 
+  } else character(0)
+
+  ref_ids <- unique(c(ref_ids_from_label, as.character(ref.id)))
+  ref_ids <- intersect(ref_ids, all_cells)
+
+  cat("Reference cell types (ref): ",
+      if(length(ref)) paste(ref, collapse=", ") else "NULL", "\n")
+  cat("Reference cell number: ", length(ref_ids), "\n")
+
+  if (length(ref_ids) == 0) {
+    stop("No reference cells found. Check `ref` / `ref.id` against annotation and smoothed.data colnames.")
+  }
 
   if(nrow(norm) == 0){
     stop("No reference cells found. Please check the ref parameter.")
@@ -302,7 +315,7 @@ FindTumor <- function(
 #' @export
 FindClone <- function(
     obj,
-    ref,
+    ref = NULL,
     ref.id = NULL,
     tumor = NULL,
     tumor.id = NULL,
@@ -583,9 +596,9 @@ FindClone <- function(
 #' @export
 suggest_k <- function(
     obj,
-    ref,
+    ref = NULL,
     ref.id = NULL,
-    tumor,
+    tumor = NULL,
     tumor.id = NULL,
     k_range = 2:8,
     n_sub = 10000,
