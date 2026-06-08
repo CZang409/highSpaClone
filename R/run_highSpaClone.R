@@ -39,9 +39,8 @@
 
 FindTumor <- function(
     obj,
-    ref=NULL,
+    ref = NULL,
     ref.id = NULL,
-    ref,
     lambda = 1/1000,
     K = 2,
     max_iter = 500,
@@ -56,65 +55,52 @@ FindTumor <- function(
   cat("Start Tumor Annotation...\n")
   cat("========================================\n")
 
-  # Extract smoothed data
   cnv <- t(obj@smoothed.data)
   cnv <- as.matrix(cnv)
-  cnv <- cnv+1e-6
+  cnv <- cnv + 1e-6
+  all_cells <- colnames(cnv)
 
   cat("CNV matrix dimensions: ", nrow(cnv), " x ", ncol(cnv), "\n")
 
-  # Get annotation
   label <- obj@annotation
-    
-  # Filter normal reference cells
+
   ref_ids_from_label <- if (!missing(ref) && !is.null(ref)) {
     as.character(label$cell.id[label$cell.label %in% ref]) 
   } else character(0)
 
   ref_ids <- unique(c(ref_ids_from_label, as.character(ref.id)))
+  ref_ids <- ref_ids[!is.na(ref_ids)]
   ref_ids <- intersect(ref_ids, all_cells)
 
   cat("Reference cell types (ref): ",
-      if(length(ref)) paste(ref, collapse=", ") else "NULL", "\n")
+      if (!is.null(ref) && length(ref) > 0) paste(ref, collapse=", ") else "NULL", "\n")
   cat("Reference cell number: ", length(ref_ids), "\n")
 
   if (length(ref_ids) == 0) {
     stop("No reference cells found. Check `ref` / `ref.id` against annotation and smoothed.data colnames.")
   }
 
-  if(nrow(norm) == 0){
-    stop("No reference cells found. Please check the ref parameter.")
-  }
-
-  # Calculate reference mean
-  norm_mat <- cnv[, which(colnames(cnv) %in% norm$cell.id)]
+  norm_mat <- cnv[, ref_ids, drop = FALSE]
   row_means <- rowMeans(norm_mat)
 
-  # Get spatial location
   spatial_location <- obj@location
   spatial_location <- spatial_location[match(colnames(cnv), spatial_location$cell.id), ]
 
-  # Construct B matrix
   B <- diag(x = row_means)
   colnames(B) <- row.names(cnv)
   row.names(B) <- row.names(cnv)
 
-  # Calculate V matrix
   V <- sweep(cnv, 1, row_means, "/")
   V <- t(V)
 
-  # Create adjacency matrix
   AMatrix <- createA(spatial_location)
   Bins <- colnames(V)
   cnv.df <- getConcated(V, spatial_location)
 
-  # Initialize k-means clustering
   kmeans_result <- kmeansFunc_Initialize(cnv.df[, Bins], K)
-  numCluster <- length(unique(kmeans_result$kmeans))
   cnv.df$kmeans_cluster <- as.numeric(kmeans_result$kmeans)
-  TotalClusters <- unique(cnv.df$kmeans_cluster)[order(unique(cnv.df$kmeans_cluster))]
+  TotalClusters <- sort(unique(cnv.df$kmeans_cluster))
 
-  # Convert to sparse matrices for efficiency
   if (!requireNamespace("Matrix", quietly = TRUE)) {
     stop("Package 'Matrix' is required.")
   }
@@ -122,7 +108,6 @@ FindTumor <- function(
   countMatrix <- Matrix::Matrix(cnv, sparse = TRUE)
   AMatrix <- Matrix::Matrix(AMatrix, sparse = TRUE)
 
-  # ===== Step 3: First iteration =====
   ResList <- run_iter(
     Y = countMatrix,
     BIn = B,
@@ -133,8 +118,6 @@ FindTumor <- function(
   )
 
   obj_old <- ResList$Obj
-
-  # ===== Step 4: Iterative optimization =====
   centers_old <- NULL
   converged <- FALSE
   final_iter <- 0
@@ -145,20 +128,13 @@ FindTumor <- function(
       cat("Iteration ", iter, " / ", max_iter, "\n")
     }
 
-    # Update V matrix
     rownames(ResList$V) <- colnames(countMatrix)
     colnames(ResList$V) <- Bins
     V <- ResList$V
     rm(ResList)
     gc(verbose = FALSE)
 
-    # Update concatenated matrix
     cnv.df <- getConcated(V, spatial_location)
-
-    # Update k-means clustering
-    if(iter == 1){
-      centers_old <- NULL
-    }
 
     kmeans_result <- kmeansFunc_Iter(
       cnv.df[, Bins],
@@ -167,15 +143,10 @@ FindTumor <- function(
       seed = seed
     )
 
-    numCluster <- length(unique(kmeans_result$kmeans))
     cnv.df$kmeans_cluster <- as.numeric(kmeans_result$kmeans)
-    rm(kmeans_result)
-    TotalClusters <- unique(cnv.df$kmeans_cluster)[order(unique(cnv.df$kmeans_cluster))]
-
-    # Update centers
+    TotalClusters <- sort(unique(cnv.df$kmeans_cluster))
     centers_old <- getMu(Bins, TotalClusters, cnv.df)
 
-    # Run iteration
     ResList <- run_iter(
       Y = countMatrix,
       BIn = B,
@@ -186,7 +157,6 @@ FindTumor <- function(
     )
 
     obj_new <- ResList$Obj
-
     logicalObjective <- (obj_old - obj_new) * 2.0 / abs(obj_new + obj_old) < epsilon
 
     if(is.na(obj_new) || logicalObjective){
@@ -209,44 +179,31 @@ FindTumor <- function(
     final_iter <- iter
   }
 
-  if(!converged && final_iter == max_iter){
-    cat("\nReached maximum iterations (", max_iter, ") without convergence.\n")
-  }
-
-  step1_time <- Sys.time()
-  iteration_time <- difftime(step1_time, start_time, units = "mins")
-  cat("\nIteration time: ", round(iteration_time, 2), " minutes\n")
-
-  # ===== Step 5: Store results in object =====
-  # Store CNV data
   rownames(ResList$V) <- colnames(countMatrix)
   colnames(ResList$V) <- Bins
   obj@cnv.data <- ResList$V
 
-  # Store cluster assignments
-
   loc <- obj@location
-  loc <- loc[match(rownames(cnv.df),loc$cell.id),]
+  loc <- loc[match(rownames(cnv.df), loc$cell.id), ]
 
-  # assign tumor labels
   cnv_mat <- obj@cnv.data
-  norm_mat=cnv_mat[which(rownames(cnv_mat) %in% norm$cell.id),]
+  norm_mat <- cnv_mat[rownames(cnv_mat) %in% ref_ids, , drop = FALSE]
 
-  id1 <- dplyr::pull(dplyr::select(dplyr::filter(cnv.df, kmeans_cluster == 1), cellID), 1)
-  id2 <- dplyr::pull(dplyr::select(dplyr::filter(cnv.df, kmeans_cluster == 2), cellID), 1)
-  mat1 <- cnv_mat[id1,]
-  mat2 <- cnv_mat[id2,]
+  id1 <- cnv.df$cellID[cnv.df$kmeans_cluster == 1]
+  id2 <- cnv.df$cellID[cnv.df$kmeans_cluster == 2]
 
-  ##assign labels to two clusters
-  #calculate the distance between the centroids of two clusters and that of the normal reference.
-  #the cluster that is further away from the norm is annotated as tumor.
+  mat1 <- cnv_mat[id1, , drop = FALSE]
+  mat2 <- cnv_mat[id2, , drop = FALSE]
+
   centroids <- lapply(list(norm_mat, mat1, mat2), function(cluster) {
     colMeans(cluster, na.rm = TRUE)
   })
+
   centroids_matrix <- do.call(rbind, centroids)
   rownames(centroids_matrix) <- c("Norm", "Mat1", "Mat2")
-  dist_matrix <- dist(centroids_matrix)
-  tumor <- which.max(dist_matrix[1:2])
+
+  dist_matrix <- as.matrix(dist(centroids_matrix))
+  tumor <- ifelse(dist_matrix["Norm", "Mat1"] > dist_matrix["Norm", "Mat2"], 1, 2)
 
   cnv.df$tumor <- ifelse(cnv.df$kmeans_cluster == tumor, "Tumor", "Other")
 
@@ -260,12 +217,8 @@ FindTumor <- function(
 
   obj@cluster <- cluster_df
 
-  end_time <- Sys.time()
-  total_time <- difftime(end_time, start_time, units = "mins")
-
   cat("\n========================================\n")
   cat("Tumor annotation completed!\n")
-  cat("Total time: ", round(total_time, 2), " minutes\n")
   cat("========================================\n")
 
   return(obj)
