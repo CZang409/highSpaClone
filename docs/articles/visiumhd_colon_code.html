@@ -72,7 +72,7 @@
 <h3 id="p1">P1<a class="anchor" aria-label="anchor" href="#p1"></a>
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># apply highSpaClone to infer spatial CNV and detect tumor subclones</span></span>
+<code class="sourceCode R"><span><span class="co"># apply highSpaClone to infer spatial CNA and detect tumor subclones</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/CZang409/highSpaClone" class="external-link">highSpaClone</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -111,18 +111,18 @@
 <span><span class="va">colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#D57358"</span>,<span class="st">"#8a508f"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/spatialplot.html">spatialplot</a></span><span class="op">(</span><span class="va">subclone_obj</span>,  colors<span class="op">=</span><span class="va">colors</span>, point_size <span class="op">=</span> <span class="fl">0.01</span>, use_coord_flip<span class="op">=</span><span class="cn">T</span>, use_x_reverse<span class="op">=</span><span class="cn">T</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># CNV heatmap</span></span>
-<span><span class="va">log.cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">subclone_obj</span><span class="op">@</span><span class="va">cnv.data</span><span class="op">)</span></span>
-<span><span class="va">log.cnv</span><span class="op">[</span><span class="va">log.cnv</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cnv</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="co"># CNA heatmap</span></span>
+<span><span class="va">log.cna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">subclone_obj</span><span class="op">@</span><span class="va">cna.data</span><span class="op">)</span></span>
+<span><span class="va">log.cna</span><span class="op">[</span><span class="va">log.cna</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cna</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="va">visiumhd_colon_p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  cnv.data   <span class="op">=</span> <span class="va">log.cnv</span>,</span>
+<span>  cna.data   <span class="op">=</span> <span class="va">log.cna</span>,</span>
 <span>  annotation <span class="op">=</span> <span class="va">subclone_obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
 <span>  chr_pos    <span class="op">=</span> <span class="va">subclone_obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/cnv_heatmap.html">cnv_heatmap</a></span><span class="op">(</span></span>
-<span>  cnv.obj<span class="op">=</span><span class="va">visiumhd_colon_p1</span>,</span>
+<span><span class="fu"><a href="../reference/cna_heatmap.html">cna_heatmap</a></span><span class="op">(</span></span>
+<span>  cna.obj<span class="op">=</span><span class="va">visiumhd_colon_p1</span>,</span>
 <span>  groupby <span class="op">=</span> <span class="st">"cell.label"</span>,</span>
 <span>  min_value  <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,  </span>
 <span>  max_value  <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -170,18 +170,18 @@
 <span><span class="va">colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#D57358"</span>,<span class="st">"#8a508f"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/spatialplot.html">spatialplot</a></span><span class="op">(</span><span class="va">subclone_obj</span>,  colors<span class="op">=</span><span class="va">colors</span>, point_size <span class="op">=</span> <span class="fl">0.01</span>, use_coord_flip<span class="op">=</span><span class="cn">T</span>, use_x_reverse<span class="op">=</span><span class="cn">T</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># CNV heatmap</span></span>
-<span><span class="va">log.cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">subclone_obj</span><span class="op">@</span><span class="va">cnv.data</span><span class="op">)</span></span>
-<span><span class="va">log.cnv</span><span class="op">[</span><span class="va">log.cnv</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cnv</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="co"># CNA heatmap</span></span>
+<span><span class="va">log.cna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">subclone_obj</span><span class="op">@</span><span class="va">cna.data</span><span class="op">)</span></span>
+<span><span class="va">log.cna</span><span class="op">[</span><span class="va">log.cna</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cna</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="va">visiumhd_colon_p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  cnv.data   <span class="op">=</span> <span class="va">log.cnv</span>,</span>
+<span>  cna.data   <span class="op">=</span> <span class="va">log.cna</span>,</span>
 <span>  annotation <span class="op">=</span> <span class="va">subclone_obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
 <span>  chr_pos    <span class="op">=</span> <span class="va">subclone_obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/cnv_heatmap.html">cnv_heatmap</a></span><span class="op">(</span></span>
-<span>  cnv.obj<span class="op">=</span><span class="va">visiumhd_colon_p2</span>,</span>
+<span><span class="fu"><a href="../reference/cna_heatmap.html">cna_heatmap</a></span><span class="op">(</span></span>
+<span>  cna.obj<span class="op">=</span><span class="va">visiumhd_colon_p2</span>,</span>
 <span>  groupby <span class="op">=</span> <span class="st">"cell.label"</span>,</span>
 <span>  min_value  <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,  </span>
 <span>  max_value  <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -229,18 +229,18 @@
 <span><span class="va">colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#D57358"</span>,<span class="st">"#8a508f"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/spatialplot.html">spatialplot</a></span><span class="op">(</span><span class="va">subclone_obj</span>,  colors<span class="op">=</span><span class="va">colors</span>, point_size <span class="op">=</span> <span class="fl">0.01</span>, use_coord_flip<span class="op">=</span><span class="cn">T</span>, use_x_reverse<span class="op">=</span><span class="cn">T</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># CNV heatmap</span></span>
-<span><span class="va">log.cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">subclone_obj</span><span class="op">@</span><span class="va">cnv.data</span><span class="op">)</span></span>
-<span><span class="va">log.cnv</span><span class="op">[</span><span class="va">log.cnv</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cnv</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="co"># CNA heatmap</span></span>
+<span><span class="va">log.cna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">subclone_obj</span><span class="op">@</span><span class="va">cna.data</span><span class="op">)</span></span>
+<span><span class="va">log.cna</span><span class="op">[</span><span class="va">log.cna</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cna</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="va">visiumhd_colon_p5</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  cnv.data   <span class="op">=</span> <span class="va">log.cnv</span>,</span>
+<span>  cna.data   <span class="op">=</span> <span class="va">log.cna</span>,</span>
 <span>  annotation <span class="op">=</span> <span class="va">subclone_obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
 <span>  chr_pos    <span class="op">=</span> <span class="va">subclone_obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/cnv_heatmap.html">cnv_heatmap</a></span><span class="op">(</span></span>
-<span>  cnv.obj<span class="op">=</span><span class="va">visiumhd_colon_p5</span>,</span>
+<span><span class="fu"><a href="../reference/cna_heatmap.html">cna_heatmap</a></span><span class="op">(</span></span>
+<span>  cna.obj<span class="op">=</span><span class="va">visiumhd_colon_p5</span>,</span>
 <span>  groupby <span class="op">=</span> <span class="st">"cell.label"</span>,</span>
 <span>  min_value  <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,  </span>
 <span>  max_value  <span class="op">=</span> <span class="fl">3</span>,</span>
