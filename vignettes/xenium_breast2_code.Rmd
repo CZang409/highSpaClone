@@ -110,7 +110,7 @@ ad_sp_filtered.write_h5ad('xenium_breast2_sc_scale.h5ad')
 ### R code
 
 ```{r}
-# apply highSpaClone to infer spatial CNV and detect tumor subclones
+# apply highSpaClone to infer spatial CNA and detect tumor subclones
 library(highSpaClone)
 library(anndata)
 library(ggplot2)
@@ -142,8 +142,8 @@ obj <- createObject(counts=data$counts,
 # smooth gene expression by chromosome
 smooth_obj <- smooth_expr(obj = obj, parallel = T, use_chunk = T)
 
-# CNV inference and subclone detection
-cnv_obj <- FindClone(smooth_obj,
+# CNA inference and subclone detection
+cna_obj <- FindClone(smooth_obj,
                       ref=c("Bcell", "Tcell", "Mast", "Myeloid"),
                       tumor=c('DCIS_Basal','DCIS_LumHR','DCIS_LumSec','IDC_LumHR'),
                       K=2,
@@ -151,20 +151,20 @@ cnv_obj <- FindClone(smooth_obj,
 
 # subclone spatial visualization
 colors <- c("#D57358", "#8a508f")
-spatialplot(cnv_obj, colors=colors, point_size = 0.05)
+spatialplot(cna_obj, colors=colors, point_size = 0.05)
 
-# CNV heatmap
-log.cnv <- log2(cnv_obj@cnv.data)
-log.cnv[log.cnv > -0.3 & log.cnv < 0.3] <- 0
+# CNA heatmap
+log.cna <- log2(cna_obj@cna.data)
+log.cna[log.cna > -0.3 & log.cna < 0.3] <- 0
 
 xenium_breast2 <- list(
-  cnv.data   = log.cnv,
-  annotation = cnv_obj@cluster,
-  chr_pos    = cnv_obj@chr_pos
+  cna.data   = log.cna,
+  annotation = cna_obj@cluster,
+  chr_pos    = cna_obj@chr_pos
 )
 
-cnv_heatmap(
-  cnv.obj=xenium_breast2,
+cna_heatmap(
+  cna.obj=xenium_breast2,
   groupby = "cell.label",
   min_value  = -2.5,  
   max_value  = 2.5,
