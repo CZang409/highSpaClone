@@ -1,7 +1,7 @@
 # Download data here: https://drive.google.com/drive/folders/17A0wfkL3YjWkfUko91vZZElBXoz6JW2W?usp=drive_link
 
 ##Figure 2
-####Fig2b CNV heatmap: see our tutorial website: https://czang409.github.io/highSpaClone/articles/xenium_breast1_code.html
+####Fig2b CNA heatmap: see our tutorial website: https://czang409.github.io/highSpaClone/articles/xenium_breast1_code.html
 ####Fig2d was created by adobe illustrator
 
 ##----Figure 2a Method Comparison----
