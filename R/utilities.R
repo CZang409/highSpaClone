@@ -1,7 +1,7 @@
 #################################################################################################################
 # Package: highSpaClone
 # Date : 2025-10-10
-# Title : Copy Number Variation Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics
+# Title : Copy Number Alteration Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics
 # Authors: Chenxuan Zang
 # Contacts: czang@mdanderson.org
 #          The University of Texas MD Anderson, Department of Biostatistics
@@ -11,9 +11,9 @@
 #'
 #' @slot counts.data Gene-by-cell raw count matrix.
 #' @slot location The spatial coordinates of each cell.
-#' @slot chr_pos The chromosome position corresponding to each bin, used for subsequent CNV heatmap drawing.
+#' @slot chr_pos The chromosome position corresponding to each bin, used for subsequent CNA heatmap drawing.
 #' @slot smoothed.data Gene-by-cell smoothed count matrix by gene order.
-#' @slot cnv.data Final CNV matrix. Dimension: cell-by-bin.
+#' @slot cna.data Final CNA matrix. Dimension: cell-by-bin.
 #' @slot cluster Tumor/Subclone label for each cell.
 #' @slot annotation Cell type annotation information.
 #' @slot gene_order Gene ordering information, contains chromosome, start, and stop position for each gene.
@@ -26,7 +26,7 @@ setClass("highSpaClone", slots=list(
   location = "ANY",
   chr_pos = "ANY",
   smoothed.data = "ANY",
-  cnv.data = "ANY",
+  cna.data = "ANY",
   cluster = "ANY",
   annotation = "data.frame",
   gene_order= "data.frame",
@@ -57,35 +57,35 @@ createObject <- function(counts,
                          gene_order_file=NULL,
                          annotations_file=NULL,
                          project=""){
-
+  
   if (any(duplicated(rownames(counts)))) {
     stop("Ensure your gene names are unique!")
   }
-
+  
   ## check dimension
   if(ncol(counts)!=nrow(location)){
     stop("The number of spots in counts and location should be consistent.")
   }
-
+  
   ## check data order
   if(!identical(colnames(counts), rownames(location))){
     stop("The column names of counts and row names of location should be matched.")
   }
-
+  
   colnames(location) <- c('cell.id', 'x', 'y')
-
+  
   ## Filter genes by average expression
   if(!is.null(min_avg_expression)) {
-
+    
     avg_expression <- Matrix::rowMeans(counts)
     genes_to_keep <- avg_expression >= min_avg_expression
     remained_gene_count <- sum(genes_to_keep)
     removed_gene_count <- sum(!genes_to_keep)
     counts <- counts[genes_to_keep, ]
-
+    
     message(sprintf("Filtered genes based on average expression threshold: %d genes removed.", removed_gene_count))
     message(sprintf("Remaining genes after filtering: %d genes.", remained_gene_count))
-
+    
   }
   ## Filter cells by minimum gene counts
   if(!is.null(min_gene_counts)) {
@@ -94,18 +94,18 @@ createObject <- function(counts,
     remained_cells_count <- sum(cells_to_keep)
     removed_cells_count <- sum(!cells_to_keep)
     counts <- counts[, cells_to_keep]
-
+    
     message(sprintf("Filtered cells based on minimum gene counts threshold: %d cells removed.", removed_cells_count))
     message(sprintf("Remaining cells after filtering: %d cells.", remained_cells_count))
-
+    
   }
-
+  
   #### get gene order info
   if(is.null(gene_order_file)){
-
+    
     data(hg38_annotation)
     gene_order <- hg38_annotation
-
+    
   }else if(is.matrix(gene_order_file)||is.data.frame(gene_order_file)){
     gene_order <- gene_order_file
   }else{
@@ -118,10 +118,10 @@ createObject <- function(counts,
       stop("Unsupported file format. Only txt and csv files are supported.")
     }
   }
-
+  
   colnames(gene_order) <- c("gene","chromosome", "start", "end")
   rownames(gene_order) <- gene_order$gene
-
+  
   ## extract common genes of count matrix and gene file
   common_genes <- intersect(rownames(counts), gene_order$gene)
   annotation_genes <- gene_order$gene
@@ -130,17 +130,17 @@ createObject <- function(counts,
   remaining_genes_count <- length(left_genes)
   message(sprintf("Removed %d genes that did not match the gene order file.", removed_genes_count))
   message(sprintf("Remaining %d genes after matching with the gene order file.", remaining_genes_count))
-
+  
   gene_order <- gene_order[gene_order$gene %in% common_genes,]
   counts <- counts[rownames(counts) %in% common_genes,]
-
+  
   #### read annotations file
   if(is.null(annotations_file)){
     stop("Please input an annotation file. It can be a data.frame, .csv or .txt file.")
-
+    
   } else if(is.data.frame(annotations_file)){
     annotations <- annotations_file
-
+    
   } else {
     extension <- tools::file_ext(annotations_file)
     if (extension == "txt") {
@@ -155,9 +155,9 @@ createObject <- function(counts,
       stop("Unsupported file format. Only dataframe, csv and txt files are supported.")
     }
   }
-
+  
   colnames(annotations) <- c("cell.id", "cell.label")
-
+  
   ## sort
   gene_order2 <- gene_order
   chr_num <- gsub("chr", "", gene_order2$chromosome)
@@ -172,18 +172,18 @@ createObject <- function(counts,
   counts <- counts[match(rownames(gene_order), rownames(counts)),,drop=FALSE]
   annotations <- annotations %>% dplyr::filter(cell.id %in% colnames(counts))
   annotations <- annotations[match(colnames(counts),annotations$cell.id),]
-
+  
   object <- new(
-
+    
     Class = "highSpaClone",
     counts.data = counts,
     location = location,
     annotation = annotations,
     gene_order= gene_order,
     project = ""
-
+    
   )
-
+  
   return(object)
 }
 
@@ -300,7 +300,7 @@ smooth_expr <- function(
           if (i %% 5 == 0) cat("Processing chunk", i, "of", n_chunks, "\n")
           indices <- chunk_indices[[i]]
           expr_chunk <- expr[, indices, drop = FALSE]
-          results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
+          results <- infercna_chunk(expr_chunk, var, exclude_chromosomes, 
                                     window_size, step, smooth_with_ends)
           return(results$x_smoothed)
         }, mc.cores = n_cores)
@@ -329,7 +329,7 @@ smooth_expr <- function(
         
         # Export necessary objects
         parallel::clusterExport(cl, 
-                                c("infercnv_chunk", "running_mean_by_chromosome", 
+                                c("infercna_chunk", "running_mean_by_chromosome", 
                                   "running_mean_for_chromosome", "running_mean",
                                   "smooth_with_ends_internal", "sort_chromosomes",
                                   "var", "exclude_chromosomes", "window_size", 
@@ -348,7 +348,7 @@ smooth_expr <- function(
             if (i %% 5 == 0) cat("Processing chunk", i, "of", length(chunk_indices), "\n")
             indices <- chunk_indices[[i]]
             expr_chunk <- expr[, indices, drop = FALSE]
-            results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
+            results <- infercna_chunk(expr_chunk, var, exclude_chromosomes, 
                                       window_size, step, smooth_with_ends)
             return(results$x_smoothed)
           })
@@ -371,7 +371,7 @@ smooth_expr <- function(
         }
         indices <- chunk_indices[[i]]
         expr_chunk <- expr[, indices, drop = FALSE]
-        results <- infercnv_chunk(expr_chunk, var, exclude_chromosomes, 
+        results <- infercna_chunk(expr_chunk, var, exclude_chromosomes, 
                                   window_size, step, smooth_with_ends)
         
         # Free memory
@@ -396,9 +396,9 @@ smooth_expr <- function(
       cat("Combining dense matrices...\n")
       res <- do.call(rbind, chunk_results)
     }
-
+    
     chunk_rownames <- unlist(lapply(chunk_indices, function(idx) original_colnames[idx]),
-                         use.names = FALSE)
+                             use.names = FALSE)
     stopifnot(length(chunk_rownames) == nrow(res))
     rownames(res) <- chunk_rownames
     
@@ -411,7 +411,7 @@ smooth_expr <- function(
     
     # Get chr_pos from first chunk
     cat("Calculating chromosome positions...\n")
-    chr_pos_result <- infercnv_chunk(expr[, 1:min(100, n_cells), drop = FALSE], 
+    chr_pos_result <- infercna_chunk(expr[, 1:min(100, n_cells), drop = FALSE], 
                                      var, exclude_chromosomes, 
                                      window_size, step, smooth_with_ends)
     chr_pos <- chr_pos_result$chr_pos
@@ -436,7 +436,7 @@ smooth_expr <- function(
     
     # Process all cells at once
     cat("Running smoothing on all cells...\n")
-    results <- infercnv_chunk(expr, var, exclude_chromosomes, 
+    results <- infercna_chunk(expr, var, exclude_chromosomes, 
                               window_size, step, smooth_with_ends)
     chr_pos <- results$chr_pos
     res <- results$x_smoothed
@@ -450,7 +450,7 @@ smooth_expr <- function(
   
   # Store results - keep the original format
   cat("\nStoring results in object...\n")
-
+  
   obj@smoothed.data <- res
   obj@chr_pos <- chr_pos
   
@@ -468,7 +468,7 @@ smooth_expr <- function(
 
 ## ====== Helper functions ======
 
-infercnv_chunk <- function(expr, var, exclude_chromosomes, window_size, step, smooth_with_ends) {
+infercna_chunk <- function(expr, var, exclude_chromosomes, window_size, step, smooth_with_ends) {
   running_means <- running_mean_by_chromosome(expr, var, exclude_chromosomes,
                                               window_size, step, smooth_with_ends)
   list(
@@ -557,10 +557,10 @@ smooth_with_ends_internal <- function(x, pyramid) {
   n <- length(pyramid)
   tail_length <- floor(n / 2)
   obs_length <- length(x)
-
+  
   smoothed <- stats::filter(x, pyramid/sum(pyramid), sides = 2)
   smoothed <- as.vector(smoothed)
-
+  
   for (tail_end in seq_len(tail_length)) {
     end_tail <- obs_length - tail_end + 1
     d_left <- tail_end - 1
@@ -570,11 +570,11 @@ smooth_with_ends_internal <- function(x, pyramid) {
     r_right <- tail_length - d_right
     denominator <- (n^2 + n) / 2 - ((r_left * (r_left + 1)) / 2) - ((r_right * (r_right + 1)) / 2)
     numerator_counts_vector <- c(seq_len(tail_length), tail_length + 1, rev(seq_len(tail_length)))
-
+    
     left_chunk <- x[seq_len(tail_end + d_right)]
     numerator_range_left <- numerator_counts_vector[(tail_length + 1 - d_left):(tail_length + 1 + d_right)]
     smoothed[tail_end] <- sum(left_chunk * numerator_range_left) / denominator
-
+    
     right_chunk <- x[(end_tail - d_right):obs_length]
     numerator_range_right <- numerator_counts_vector[(tail_length + 1 - d_left):(tail_length + 1 + d_right)]
     smoothed[end_tail] <- sum(right_chunk * rev(numerator_range_right)) / denominator
@@ -609,7 +609,7 @@ running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
         smooth_with_ends_internal(row, pyramid)
       }))
     } else {
-
+      
       if (inherits(x, "sparseMatrix")) {
         result <- Matrix::t(apply(x, 1, function(row) {
           if (inherits(row, "sparseVector")) {
@@ -642,5 +642,4 @@ running_mean <- function(x, n = 51, step = 10, smooth_with_ends = FALSE) {
     return(list(smoothed_x = smoothed_x))
   }
 }
-
-
+                             
