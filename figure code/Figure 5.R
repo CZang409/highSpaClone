@@ -59,7 +59,7 @@ pdf("./Fig5b.pdf", 20, 4)
 print (combined_plot)
 dev.off()
 
-##----Figure 5d CNV score----
+##----Figure 5d CNA score----
 load('./F5d.RData')
 
 plot_cnv_score <- function(data, 
