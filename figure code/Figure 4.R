@@ -140,12 +140,17 @@ p <- ggplot(cnv_burden_long_data, aes(x = cell.label, y = CNV_burdens, fill = CN
              size = 1,
              alpha = 0.5,
              show.legend = FALSE)+
-  
-  scale_fill_manual(values = custom_colors) +  # Custom colors
+  scale_fill_manual(
+    values = custom_colors,
+    labels = c(
+      "CNV_gain" = "CNA gain",
+      "CNV_loss" = "CNA loss"
+    )
+  )+
   scale_x_discrete(labels = c("Clone 1", "Clone 2", "Clone 3")) +
-  labs(title = "CNV Burdens Across Clones",
+  labs(title = "CNA Burdens Across Clones",
        x = "",
-       y = "CNV Burdens",
+       y = "CNA Burdens",
        fill = "State") +  # Set labels
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),  # Center title
@@ -156,10 +161,8 @@ p <- ggplot(cnv_burden_long_data, aes(x = cell.label, y = CNV_burdens, fill = CN
     panel.grid.minor = element_blank(),  # Remove minor grid lines
     axis.line = element_line(color = "black"),  # Keep axis lines
     axis.ticks = element_line(color = "black")  # Keep axis ticks
-    #plot.background = element_rect(color = "black", size = 1)  # 3. Add black border around the plot
   )+
   coord_cartesian(ylim = c(10, 50))
-p
 
 ggsave("./F4f.png", p, width = 6.5, height = 4.5, dpi = 300)
 pdf("./Fig4f.pdf", 6.5, 4.5)	 
