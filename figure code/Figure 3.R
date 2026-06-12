@@ -1,7 +1,7 @@
 # Download data here: https://drive.google.com/drive/folders/1DOcJTb7YFPwXm2Pa4tiZWPFzHxurqqLa?usp=drive_link
 
 ##Figure 3
-#### Fig2b CNV heatmap: see tutorial website: https://czang409.github.io/highSpaClone/articles/xenium_breast2_code.html
+#### Fig2b CNA heatmap: see tutorial website: https://czang409.github.io/highSpaClone/articles/xenium_breast2_code.html
 
 ##----Figure 3a Method Comparison----
 library(ggplot2)
@@ -49,7 +49,7 @@ pdf("./Fig3a.pdf", 20, 4)
 print (combined_plot)
 dev.off()
 
-##----Figure 2c CNV burden----
+##----Figure 2c CNA burden----
 ## total 358 bins
 load('./F3c.RData')
 custom_colors <- c("CNV_gain" = "#ffadad", "CNV_loss" = "#a0c4ff")
@@ -64,7 +64,7 @@ p <- ggplot(Fig3C.data, aes(x = highSpaClone, y = CNV_burdens, fill = CNV_status
   geom_point(data = Fig3C.data %>%
                group_by(highSpaClone, CNV_status) %>%
                sample_n(300),
-             aes(x = highSpaClone, y = CNV_burdens, color = CNV_status),
+             aes(x = highSpaClone, y = _burdens, color = CNV_status),
              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8),
              shape = 16,
              size = 1,
