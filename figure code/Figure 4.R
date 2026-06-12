@@ -107,7 +107,7 @@ print(p)
 dev.off()
 
 
-##----Figure 4f CNV burden boxplot----
+##----Figure 4f CNA burden boxplot----
 load('./F4f.RData')
 custom_colors <- c("CNV_gain" = "#ffadad", "CNV_loss" = "#a0c4ff")
 
