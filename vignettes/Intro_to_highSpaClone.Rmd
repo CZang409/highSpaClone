@@ -69,7 +69,7 @@ obj <- createObject(counts=counts,
 
 ### Smooth by chromosome
 
-This step is to smooth gene expression by gene order within each chromosome, which improves CNV signal continuity and suppresses gene-specific noise. The most important input arguments are:
+This step is to smooth gene expression by gene order within each chromosome, which improves CNA signal continuity and suppresses gene-specific noise. The most important input arguments are:
 
 - `obj`: highSpaClone object.
 - `window_size`: Size of the running-mean window (in genes) used within each chromosome (default: 101). Must be an integer.
@@ -91,7 +91,7 @@ smooth_obj <- smooth_expr(obj = obj,
 
 ### Identify tumor cells (optional)
 
-The `FindTumor()` function identifies tumor cells based on CNV profiles when no prior tumor annotations are available.
+The `FindTumor()` function identifies tumor cells based on CNA profiles when no prior tumor annotations are available.
 This function performs reference-guided tumor segmentation using the smoothed highSpaClone object.
 
 It requires users to specify the normal (reference) cell population, which can be provided in either of the following forms:
@@ -114,14 +114,14 @@ spatialplot(obj, colors=colors, point_size = 3, use_coord_flip=T)
 
 ### Suggest the number of subclones (optional)
 
-The number of tumor subclones must be pre-specified. If there is no prior knowledge, we provide the function `suggest_k`, which recommends an appropriate value for K based on a Silhouette score that integrates both CNV and spatial information. The most important input arguments are:
+The number of tumor subclones must be pre-specified. If there is no prior knowledge, we provide the function `suggest_k`, which recommends an appropriate value for K based on a Silhouette score that integrates both CNA and spatial information. The most important input arguments are:
 
 - `obj`: smoothed highSpaClone object.
 - `ref`: A character vector of reference cell type labels.
 - `tumor`: A character vector of tumor cell type labels.
 - `k_range`: Integer vector of K values to evaluate.
 - `n_sub`: Max number of cells to subsample for evaluation (default: 5000).
-- `alpha`: A number bewtween 0 and 1. Control the weight of CNV in clustering. 
+- `alpha`: A number bewtween 0 and 1. Control the weight of CNA in clustering. 
 
 ```{r}
 # Suggest the number of subclones
@@ -139,9 +139,9 @@ suggest_k(
 
 ```
 
-### Spatial CNV inference and subclone detection
+### Spatial CNA inference and subclone detection
 
-The `FindClone()` function performs spatial CNV inference and tumor subclone identification based on CNV patterns, enhanced by spatial regularization. After tumor cells are identified, this function clusters them into subclonal populations that share similar CNV states while also preserving spatial continuity.
+The `FindClone()` function performs spatial CNA inference and tumor subclone identification based on CNA patterns, enhanced by spatial regularization. After tumor cells are identified, this function clusters them into subclonal populations that share similar CNA states while also preserving spatial continuity.
 
 Users must define a reference (normal) cell population using either:
 
@@ -153,11 +153,11 @@ All non-reference cells are treated as tumor cells by default. Alternatively, us
 - `tumor`: A character vector of tumor cell type labels, or
 - `tumor.id`: A character vector of tumor cell IDs.
 
-The parameter `lambda` controls the strength of spatial smoothing, encouraging neighboring cells to remain in the same subclone if supported by CNV evidence. The number of subclones to infer is set by `K`, allowing flexible modeling of tumor heterogeneity.
+The parameter `lambda` controls the strength of spatial smoothing, encouraging neighboring cells to remain in the same subclone if supported by CNA evidence. The number of subclones to infer is set by `K`, allowing flexible modeling of tumor heterogeneity.
 
 
 ```{r}
-# Spatial CNV inference and tumor subclone detection
+# Spatial CNA inference and tumor subclone detection
 obj <- FindClone(obj=smooth_obj,
                  ref=c("B Cells", "CD4+ T Cells", "CD8+ T Cells", 
                       "Macrophages 1", "Macrophages 2", "Endothelial"),
@@ -170,23 +170,23 @@ colors <- c("#E64B35", "#4DBBD5", "#8491B4")
 spatialplot(obj, colors=colors, point_size = 3, use_coord_flip=T)
 ```
 
-### Visualize CNV heatmap
+### Visualize CNA heatmap
 
-Visualize subclonal CNV patterns by heatmap:
+Visualize subclonal CNA patterns by heatmap:
 
 ```{r}
-# Visualize CNV heatmap
-log.cnv <- log2(obj@cnv.data)
-log.cnv[log.cnv > -0.5 & log.cnv < 0.5] <- 0
+# Visualize CNA heatmap
+log.cna <- log2(obj@cna.data)
+log.cna[log.cna > -0.5 & log.cna < 0.5] <- 0
 
 breasthd <- list(
-  cnv.data   = log.cnv,
+  cna.data   = log.cna,
   annotation = obj@cluster,
   chr_pos    = obj@chr_pos
 )
 
-cnv_heatmap(
-  cnv.obj=breasthd,
+cna_heatmap(
+  cna.obj=breasthd,
   groupby = "cell.label",
   min_value  = -3,  
   max_value  = 3,
