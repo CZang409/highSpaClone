@@ -158,7 +158,7 @@ custom file to replace the default.</li>
 <h3 id="smooth-by-chromosome">Smooth by chromosome<a class="anchor" aria-label="anchor" href="#smooth-by-chromosome"></a>
 </h3>
 <p>This step is to smooth gene expression by gene order within each
-chromosome, which improves CNV signal continuity and suppresses
+chromosome, which improves CNA signal continuity and suppresses
 gene-specific noise. The most important input arguments are:</p>
 <ul>
 <li>
@@ -222,7 +222,7 @@ parallel to accelerate runtime (default: FALSE).</li>
 <h3 id="identify-tumor-cells-optional">Identify tumor cells (optional)<a class="anchor" aria-label="anchor" href="#identify-tumor-cells-optional"></a>
 </h3>
 <p>The <code><a href="../reference/FindTumor.html">FindTumor()</a></code> function identifies tumor cells based on
-CNV profiles when no prior tumor annotations are available. This
+CNA profiles when no prior tumor annotations are available. This
 function performs reference-guided tumor segmentation using the smoothed
 highSpaClone object.</p>
 <p>It requires users to specify the normal (reference) cell population,
@@ -243,7 +243,7 @@ labels.</li>
 <span><span class="co">#&gt; ========================================</span></span>
 <span><span class="co">#&gt; Start Tumor Annotation...</span></span>
 <span><span class="co">#&gt; ========================================</span></span>
-<span><span class="co">#&gt; CNV matrix dimensions:  190  x  118697 </span></span>
+<span><span class="co">#&gt; CNA matrix dimensions:  190  x  118697 </span></span>
 <span><span class="co">#&gt; Reference cell types:  B Cells, CD4+ T Cells, CD8+ T Cells, Macrophages, Endothelial </span></span>
 <span><span class="co">#&gt; Number of reference cells:  23995 </span></span>
 <span><span class="co">#&gt; Iteration  1  /  500 </span></span>
@@ -269,7 +269,7 @@ labels.</li>
 <p>The number of tumor subclones must be pre-specified. If there is no
 prior knowledge, we provide the function <code>suggest_k</code>, which
 recommends an appropriate value for K based on a Silhouette score that
-integrates both CNV and spatial information. The most important input
+integrates both CNA and spatial information. The most important input
 arguments are:</p>
 <ul>
 <li>
@@ -287,7 +287,7 @@ labels.</li>
 (default: 5000).</li>
 <li>
 <code>alpha</code>: A number bewtween 0 and 1. Control the weight of
-CNV in clustering.</li>
+CNA in clustering.</li>
 </ul>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Suggest the number of subclones</span></span>
@@ -306,12 +306,12 @@ CNV in clustering.</li>
 <p><img src="Intro_to_highSpaClone_files/figure-html/unnamed-chunk-6-1.png" width="2187.5"></p>
 </div>
 <div class="section level3">
-<h3 id="spatial-cnv-inference-and-subclone-detection">Spatial CNV inference and subclone detection<a class="anchor" aria-label="anchor" href="#spatial-cnv-inference-and-subclone-detection"></a>
+<h3 id="spatial-cna-inference-and-subclone-detection">Spatial CNA inference and subclone detection<a class="anchor" aria-label="anchor" href="#spatial-CNA-inference-and-subclone-detection"></a>
 </h3>
-<p>The <code><a href="../reference/FindClone.html">FindClone()</a></code> function performs spatial CNV inference
-and tumor subclone identification based on CNV patterns, enhanced by
+<p>The <code><a href="../reference/FindClone.html">FindClone()</a></code> function performs spatial CNA inference
+and tumor subclone identification based on CNA patterns, enhanced by
 spatial regularization. After tumor cells are identified, this function
-clusters them into subclonal populations that share similar CNV states
+clusters them into subclonal populations that share similar CNA states
 while also preserving spatial continuity.</p>
 <p>Users must define a reference (normal) cell population using
 either:</p>
@@ -334,10 +334,10 @@ or</li>
 </ul>
 <p>The parameter <code>lambda</code> controls the strength of spatial
 smoothing, encouraging neighboring cells to remain in the same subclone
-if supported by CNV evidence. The number of subclones to infer is set by
+if supported by CNA evidence. The number of subclones to infer is set by
 <code>K</code>, allowing flexible modeling of tumor heterogeneity.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Spatial CNV inference and tumor subclone detection</span></span>
+<code class="sourceCode R"><span><span class="co"># Spatial CNA inference and tumor subclone detection</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span>obj<span class="op">=</span><span class="va">smooth_obj</span>,</span>
 <span>                 ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B Cells"</span>, <span class="st">"CD4+ T Cells"</span>, <span class="st">"CD8+ T Cells"</span>, </span>
 <span>                      <span class="st">"Macrophages"</span>, <span class="st">"Endothelial"</span><span class="op">)</span>,</span>
@@ -349,7 +349,7 @@ if supported by CNV evidence. The number of subclones to infer is set by
 <span><span class="co">#&gt; ========================================</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [Step 1] Preparing data...</span></span>
-<span><span class="co">#&gt; CNV matrix dimensions (bins x cells):  190  x  118697 </span></span>
+<span><span class="co">#&gt; CNA matrix dimensions (bins x cells):  190  x  118697 </span></span>
 <span><span class="co">#&gt; Reference cell types (ref):  B Cells, CD4+ T Cells, CD8+ T Cells, Macrophages, Endothelial </span></span>
 <span><span class="co">#&gt; Reference cell number:  23995 </span></span>
 <span><span class="co">#&gt; Tumor cell number:  65579 </span></span>
@@ -369,7 +369,7 @@ if supported by CNV evidence. The number of subclones to infer is set by
 <span><span class="co">#&gt; Results stored in object.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ========================================</span></span>
-<span><span class="co">#&gt; CNV inference and tumor subclone detection completed!</span></span>
+<span><span class="co">#&gt; CNA inference and tumor subclone detection completed!</span></span>
 <span><span class="co">#&gt; Total time:  8.07  minutes</span></span>
 <span><span class="co">#&gt; ========================================</span></span>
 <span></span>
@@ -379,22 +379,22 @@ if supported by CNV evidence. The number of subclones to infer is set by
 <p><img src="Intro_to_highSpaClone_files/figure-html/unnamed-chunk-7-1.png" width="2187.5"></p>
 </div>
 <div class="section level3">
-<h3 id="visualize-cnv-heatmap">Visualize CNV heatmap<a class="anchor" aria-label="anchor" href="#visualize-cnv-heatmap"></a>
+<h3 id="visualize-cna-heatmap">Visualize CNA heatmap<a class="anchor" aria-label="anchor" href="#visualize-cna-heatmap"></a>
 </h3>
-<p>Visualize subclonal CNV patterns by heatmap:</p>
+<p>Visualize subclonal CNA patterns by heatmap:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Visualize CNV heatmap</span></span>
-<span><span class="va">log.cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">cnv.data</span><span class="op">)</span></span>
-<span><span class="va">log.cnv</span><span class="op">[</span><span class="va">log.cnv</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cnv</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<code class="sourceCode R"><span><span class="co"># Visualize CNA heatmap</span></span>
+<span><span class="va">log.cna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">cna.data</span><span class="op">)</span></span>
+<span><span class="va">log.cna</span><span class="op">[</span><span class="va">log.cna</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">&amp;</span> <span class="va">log.cna</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="va">breasthd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  cnv.data   <span class="op">=</span> <span class="va">log.cnv</span>,</span>
+<span>  cna.data   <span class="op">=</span> <span class="va">log.cna</span>,</span>
 <span>  annotation <span class="op">=</span> <span class="va">obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
 <span>  chr_pos    <span class="op">=</span> <span class="va">obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/cnv_heatmap.html">cnv_heatmap</a></span><span class="op">(</span></span>
-<span>  cnv.obj<span class="op">=</span><span class="va">breasthd</span>,</span>
+<span><span class="fu"><a href="../reference/cna_heatmap.html">cna_heatmap</a></span><span class="op">(</span></span>
+<span>  cna.obj<span class="op">=</span><span class="va">breasthd</span>,</span>
 <span>  groupby <span class="op">=</span> <span class="st">"cell.label"</span>,</span>
 <span>  min_value  <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,  </span>
 <span>  max_value  <span class="op">=</span> <span class="fl">3</span>,</span>
