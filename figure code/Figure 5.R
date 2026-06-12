@@ -1,7 +1,7 @@
 # Download data here: https://drive.google.com/drive/folders/1-djdJ_SBWkTA9p3bWWM7hTUE1Q3AzGbe?usp=drive_link 
 
 ##Figure 5
-####Fig5c CNV heatmap: see tutorial website: https://czang409.github.io/highSpaClone/articles/visiumhd_colon_code.html
+####Fig5c CNA heatmap: see tutorial website: https://czang409.github.io/highSpaClone/articles/visiumhd_colon_code.html
 library(ggplot2)
 library(dplyr)
 library(patchwork)
@@ -146,7 +146,7 @@ venn.plot <- venn.diagram(
 grid.newpage()
 grid.draw(venn.plot)
 
-##----Figure 5f CNV burden----
+##----Figure 5f CNA burden----
 load('./F5f.RData')
 ## transite wide data to long data
 cnv_long_data <- cnv.burden %>%
@@ -185,12 +185,17 @@ p <- ggplot(cnv_filt, aes(x = sample, y = CNV_burdens, fill = CNV_status)) +
              size = 1,
              alpha = 0.5,
              show.legend = FALSE)+
-  
-  scale_fill_manual(values = custom_colors) +  # Custom colors
+  scale_fill_manual(
+    values = custom_colors,
+    labels = c(
+      "CNV_gain" = "CNA gain",
+      "CNV_loss" = "CNA loss"
+    )
+  )+
   scale_x_discrete(labels = c("P1CRC", "P2CRC", "P5CRC")) +
-  labs(title = "CNV Burdens Across Patients",
+  labs(title = "CNA Burdens Across Patients",
        x = "",
-       y = "CNV Burdens",
+       y = "CNA Burdens",
        fill = "State") +  # Set labels
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),  # Center title
