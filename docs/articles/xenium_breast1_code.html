@@ -174,7 +174,7 @@
 <h3 id="r-code">R code<a class="anchor" aria-label="anchor" href="#r-code"></a>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># apply highSpaClone to infer spatial CNV and detect tumor subclones</span></span>
+<code class="sourceCode R"><span><span class="co"># apply highSpaClone to infer spatial CNA and detect tumor subclones</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/CZang409/highSpaClone" class="external-link">highSpaClone</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://anndata.dynverse.org" class="external-link">anndata</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -208,8 +208,8 @@
 <span><span class="co"># smooth gene expression by chromosome</span></span>
 <span><span class="va">smooth_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/smooth_expr.html">smooth_expr</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj</span>, parallel <span class="op">=</span> <span class="cn">T</span>, use_chunk <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># CNV inference and subclone detection</span></span>
-<span><span class="va">cnv_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
+<span><span class="co"># CNA inference and subclone detection</span></span>
+<span><span class="va">cna_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FindClone.html">FindClone</a></span><span class="op">(</span><span class="va">smooth_obj</span>,</span>
 <span>                      ref<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Macrophages_1"</span>, <span class="st">"Macrophages_2"</span>, <span class="st">"B_Cells"</span>, <span class="st">"CD8+_T_Cells"</span>, <span class="st">"CD4+_T_Cells"</span><span class="op">)</span>,</span>
 <span>                      tumor<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Invasive_Tumor"</span>, <span class="st">"Prolif_Invasive_Tumor"</span>, <span class="st">"DCIS_1"</span>, <span class="st">"DCIS_2"</span><span class="op">)</span>,</span>
 <span>                      K<span class="op">=</span><span class="fl">3</span>,</span>
@@ -217,20 +217,20 @@
 <span></span>
 <span><span class="co"># subclone spatial visualization</span></span>
 <span><span class="va">colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#D57358"</span>, <span class="st">"#8a508f"</span>, <span class="st">"#023047"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/spatialplot.html">spatialplot</a></span><span class="op">(</span><span class="va">cnv_obj</span>, use_x_reverse<span class="op">=</span><span class="cn">T</span>, colors<span class="op">=</span><span class="va">colors</span>, point_size <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/spatialplot.html">spatialplot</a></span><span class="op">(</span><span class="va">cna_obj</span>, use_x_reverse<span class="op">=</span><span class="cn">T</span>, colors<span class="op">=</span><span class="va">colors</span>, point_size <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># CNV heatmap</span></span>
-<span><span class="va">log.cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">cnv_obj</span><span class="op">@</span><span class="va">cnv.data</span><span class="op">)</span></span>
-<span><span class="va">log.cnv</span><span class="op">[</span><span class="va">log.cnv</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.3</span> <span class="op">&amp;</span> <span class="va">log.cnv</span> <span class="op">&lt;</span> <span class="fl">0.3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="co"># CNA heatmap</span></span>
+<span><span class="va">log.cna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">cna_obj</span><span class="op">@</span><span class="va">cna.data</span><span class="op">)</span></span>
+<span><span class="va">log.cna</span><span class="op">[</span><span class="va">log.cna</span> <span class="op">&gt;</span> <span class="op">-</span><span class="fl">0.3</span> <span class="op">&amp;</span> <span class="va">log.cna</span> <span class="op">&lt;</span> <span class="fl">0.3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="va">xenium_breast1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  cnv.data   <span class="op">=</span> <span class="va">log.cnv</span>,</span>
-<span>  annotation <span class="op">=</span> <span class="va">cnv_obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
-<span>  chr_pos    <span class="op">=</span> <span class="va">cnv_obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
+<span>  cna.data   <span class="op">=</span> <span class="va">log.cna</span>,</span>
+<span>  annotation <span class="op">=</span> <span class="va">cna_obj</span><span class="op">@</span><span class="va">cluster</span>,</span>
+<span>  chr_pos    <span class="op">=</span> <span class="va">cna_obj</span><span class="op">@</span><span class="va">chr_pos</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/cnv_heatmap.html">cnv_heatmap</a></span><span class="op">(</span></span>
-<span>  cnv.obj<span class="op">=</span><span class="va">xenium_breast1</span>,</span>
+<span><span class="fu"><a href="../reference/cna_heatmap.html">cna_heatmap</a></span><span class="op">(</span></span>
+<span>  cna.obj<span class="op">=</span><span class="va">xenium_breast1</span>,</span>
 <span>  groupby <span class="op">=</span> <span class="st">"cell.label"</span>,</span>
 <span>  auto_size <span class="op">=</span> <span class="cn">F</span>,</span>
 <span>  width_in <span class="op">=</span> <span class="fl">7</span>,</span>
