@@ -70,12 +70,17 @@ p <- ggplot(Fig3C.data, aes(x = highSpaClone, y = CNV_burdens, fill = CNV_status
              size = 1,
              alpha = 0.5,
              show.legend = FALSE)+
-
-  scale_fill_manual(values = custom_colors) +  # Custom colors
+  scale_fill_manual(
+    values = custom_colors,
+    labels = c(
+      "CNV_gain" = "CNA gain",
+      "CNV_loss" = "CNA loss"
+    )
+  )+
   scale_x_discrete(labels = c("DCIS", "IDC")) +
-  labs(title = "CNV Burdens Across Tumor Clones",
+  labs(title = "CNA Burdens Across Tumor Clones",
        x = "",
-       y = "CNV Burdens",
+       y = "CNA Burdens",
        fill = "State") +  # Set labels
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),  # Center title
