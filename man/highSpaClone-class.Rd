@@ -14,11 +14,11 @@ The highSpaClone Class
 
 \item{\code{location}}{The spatial coordinates of each cell.}
 
-\item{\code{chr_pos}}{The chromosome position corresponding to each bin, used for subsequent CNV heatmap drawing.}
+\item{\code{chr_pos}}{The chromosome position corresponding to each bin, used for subsequent CNA heatmap drawing.}
 
 \item{\code{smoothed.data}}{Gene-by-cell smoothed count matrix by gene order.}
 
-\item{\code{cnv.data}}{Final CNV matrix. Dimension: cell-by-bin.}
+\item{\code{cna.data}}{Final CNA matrix. Dimension: cell-by-bin.}
 
 \item{\code{cluster}}{Tumor/Subclone label for each cell.}
 

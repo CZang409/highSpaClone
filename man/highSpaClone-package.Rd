@@ -4,9 +4,9 @@
 \name{highSpaClone-package}
 \alias{highSpaClone}
 \alias{highSpaClone-package}
-\title{highSpaClone: Copy Number Variation Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics}
+\title{highSpaClone: Copy Number Alteration Inference and Tumor Subclone Analysis for High-Resolution Spatial Transcriptomics}
 \description{
-A computational framework for spatial copy number variation (CNV) inference and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data.
+A computational framework for spatial copy number alteration (CNA) inference and tumor subclone classification from high-resolution spatial transcriptomics (SRT) data.
 }
 \seealso{
 Useful links:
