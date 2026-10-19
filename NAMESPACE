@@ -2,7 +2,7 @@
 
 export(FindClone)
 export(FindTumor)
-export(cnv_heatmap)
+export(cna_heatmap)
 export(createObject)
 export(smooth_expr)
 export(spatialplot)
